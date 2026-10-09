@@ -66,7 +66,7 @@ Phạm vi tập trung vào quá trình nhân viên tiếp nhận tra cứu thôn
 | ------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | NFR1   | Hiệu năng       | Hệ thống phải hiển thị danh sách phiếu bảo hành trong dưới 2 giây khi có 10.000 bản ghi, trên máy có 8 GB RAM                                            |
 | NFR2   | Tính dễ sử dụng | Nhân viên tiếp nhận mới phải có thể tạo một phiếu bảo hành đúng trong dưới 3 phút mà không cần hỏi đồng nghiệp                                           |
-| NFR3   | Bảo mật         | Số điện thoại phải được hiển thị theo dạng che, ví dụ 090****567, đối với nhân viên tiếp nhận. Chỉ Quản lý và Ban giám đốc được xem số điện thoại đầy đủ |
+| NFR3   | Bảo mật thông tin         | 100% số điện thoại hiển thị cho nhân viên tiếp nhận phải được che theo định dạng 090****567. Chỉ tài khoản quản lý và giám đốc mới được xem đầy đủ số điện thoại |
 
 ## 5. Ràng buộc và quy tắc nghiệp vụ
 

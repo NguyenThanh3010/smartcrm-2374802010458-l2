@@ -56,7 +56,7 @@ smartcrm-2374802010458-l2/
 ├── .env.example
 ├── .gitignore
 └── README.md
-
+```
 ## 5. Hướng dẫn cài đặt và chạy
 
 ## 6. Khai báo sử dụng công cụ AI

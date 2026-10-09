@@ -1,0 +1,1 @@
+Link file Figma: https://www.figma.com/design/GYVI2LiL9vzLHrJloVgpWb/Smart-CRM-L02---Wireframes?node-id=7-199&t=qrxFBpWuliNF7N5q-0

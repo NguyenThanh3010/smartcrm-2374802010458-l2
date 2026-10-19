@@ -1,34 +1,32 @@
-require('dotenv').config({ path: '../../.env' });
+﻿const path = require('node:path');
 
-const express = require('express');
-const { Pool } = require('pg');
-
-const app = express();
-
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+require('dotenv').config({
+  path: path.resolve(__dirname, '../../.env')
 });
 
-app.get('/', (req, res) => res.send('Hello Smart CRM'));
+const app = require('./src/app');
+const { pool } = require('./src/db');
 
-app.get('/db-check', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW() AS server_time');
-    res.json({ status: 'OK', ...result.rows[0] });
-  } catch (err) {
-    res.status(500).json({
-      status: 'ERROR',
-      message: err.message
-    });
-  }
+const port = Number(process.env.APP_PORT) || 3000;
+
+const server = app.listen(port, () => {
+  console.log(`Smart CRM API đang chạy tại http://localhost:${port}`);
 });
 
-const port = process.env.APP_PORT || 3000;
+function shutdown(signal) {
+  console.log(`\nNhận ${signal}, đang dừng server...`);
 
-app.listen(port, () =>
-  console.log('Server chạy tại http://localhost:' + port)
-);
+  server.close(async () => {
+    try {
+      await pool.end();
+      console.log('Server và database connection đã đóng.');
+      process.exit(0);
+    } catch (error) {
+      console.error('Lỗi khi đóng database connection:', error.message);
+      process.exit(1);
+    }
+  });
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

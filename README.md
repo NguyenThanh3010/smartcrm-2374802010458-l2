@@ -152,7 +152,6 @@ Các biến môi trường:
 | `DB_USER` | Tài khoản database |
 | `DB_PASSWORD` | Mật khẩu database |
 | `APP_PORT` | Cổng Backend |
-| `SECRET_KEY` | Khóa cấu hình ứng dụng |
 | `AUTH_USERNAME` | Tên đăng nhập ứng dụng |
 | `AUTH_PASSWORD` | Mật khẩu đăng nhập ứng dụng |
 | `AUTH_TOKEN_SECRET` | Khóa bí mật ký Bearer token |
@@ -281,8 +280,9 @@ Các nhóm kiểm thử hiện có:
 - Due date: ba mức ưu tiên và quy tắc bỏ qua Chủ nhật.
 - Due date: tiếp nhận vào Chủ nhật.
 - Due date: mức ưu tiên không hợp lệ.
+- HTTP mapping: mã lỗi nghiệp vụ được ánh xạ đúng sang HTTP status.
 
-Kết quả kiểm thử đã xác nhận trong quá trình triển khai: **10 tests, 10 PASS, 0 FAIL**.
+Kết quả kiểm thử đã xác nhận trong quá trình triển khai: **11 tests, 11 PASS, 0 FAIL**.
 
 ### Build Frontend
 
@@ -311,16 +311,12 @@ npm run lint
 - Ba trạng thái giao diện loading, empty và error; có chức năng retry.
 - Xử lý HTTP 401: xóa thông tin phiên và quay lại màn hình đăng nhập.
 - Tính hạn cam kết theo mức ưu tiên, bỏ qua Chủ nhật.
-- 10 unit tests PASS.
+- 11 unit tests PASS.
 - Frontend production build thành công.
 
-### Các hạng mục cần tiếp tục hoàn thiện trước khi nộp
+### C?n ki?m ch?ng b? sung tr??c khi n?p
 
-- Rà soát README trên môi trường clone mới.
-- Hoàn thiện sơ đồ kiến trúc thực tế.
-- Bổ sung Bug Log và khai báo sử dụng AI.
-- Rà soát responsive, lint, bảo mật và các trường hợp nghiệp vụ còn lại.
-- Hoàn thiện ảnh minh chứng, tài liệu PDF và quy trình Git/tag `v0.2`.
+- Clone repo GitHub vào thư mục mới và thực hiện đầy đủ quy trình cài đặt, cấu hình và chạy theo README để xác nhận khả năng tái lập.
 
 ## 11. Tài liệu liên quan
 

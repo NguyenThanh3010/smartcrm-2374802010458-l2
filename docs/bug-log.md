@@ -14,7 +14,7 @@ Tài liệu ghi nhận các lỗi thực tế phát hiện trong quá trình ki�
    - Nhấn nút Tạo phiếu bảo hành.
 5. **Nguyên nhân:** Cơ chế HTML constraint validation chặn sự kiện submit trước khi hàm handleSubmit của React được thực thi. Do đó, phần kiểm tra dữ liệu và thông báo lỗi tùy chỉnh của ứng dụng không được chạy.
 6. **Cách sửa:** Thêm thuộc tính noValidate vào thẻ form, giữ các thuộc tính required và sử dụng logic kiểm tra dữ liệu hiện có trong handleSubmit. Kết quả được kiểm tra lại trên giao diện: biểu mẫu hiển thị thông báo tiếng Việt khi thiếu thông tin và khi mô tả sự cố ngắn hơn 10 ký tự.
-7. **Commit và xác nhận:** Đã xác nhận thủ công trên giao diện, không phát sinh phiếu khi dữ liệu bắt buộc chưa hợp lệ. Commit sẽ được bổ sung sau khi hoàn tất đợt commit BT2.
+7. **Commit và xác nhận:** Đã xác nhận thủ công trên giao diện, không phát sinh phiếu khi dữ liệu bắt buộc chưa hợp lệ. Commit: 12c17c1 (BT2).
 
 ## BUG-02 – Tính hạn cam kết sai quy tắc nghiệp vụ
 
@@ -27,4 +27,4 @@ Tài liệu ghi nhận các lỗi thực tế phát hiện trong quá trình ki�
    - Đối chiếu kết quả với quy tắc SLA trong SRS.
 5. **Nguyên nhân:** Repository sử dụng câu SQL cộng cố định INTERVAL '3 days'. Logic này không phân biệt ba mức ưu tiên và không loại trừ ngày Chủ nhật.
 6. **Cách sửa:** Bổ sung hàm calculateDueDate trong Ticket Service, xác định số ngày theo mức ưu tiên: CAO = 1, TRUNG_BINH = 3, THAP = 5. Hàm bỏ qua Chủ nhật. Service truyền received_at và due_date đã tính sang Repository để lưu vào PostgreSQL. Bổ sung 3 bài kiểm thử cho ba mức ưu tiên, trường hợp tiếp nhận vào Chủ nhật và mức ưu tiên không hợp lệ.
-7. **Commit và xác nhận:** Đã chạy 10 bài unit test: 10 PASS, 0 FAIL. Đã tạo phiếu BH-000005/2026 với mức ưu tiên Trung bình lúc 11:15 ngày 30/10/2026. PostgreSQL xác nhận hạn cam kết là 11:15 ngày 03/11/2026, tương ứng 96 giờ lịch và 72 giờ tính theo ngày làm việc sau khi bỏ qua Chủ nhật. Commit sẽ được bổ sung sau khi hoàn tất đợt commit BT2.
+7. **Commit và xác nhận:** Đã chạy 10 bài unit test: 10 PASS, 0 FAIL. Đã tạo phiếu BH-000005/2026 với mức ưu tiên Trung bình lúc 11:15 ngày 30/10/2026. PostgreSQL xác nhận hạn cam kết là 11:15 ngày 03/11/2026, tương ứng 96 giờ lịch và 72 giờ tính theo ngày làm việc sau khi bỏ qua Chủ nhật. Commit: 12c17c1 (BT2).

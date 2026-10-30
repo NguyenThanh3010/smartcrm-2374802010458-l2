@@ -81,10 +81,10 @@
 
 ### TD-10 — Quy ước mã phiếu và hạn xử lý
 
-- Thay đổi: API tạo mã phiếu theo dạng `BH-xxxxxx/YYYY`; hạn xử lý hiện được đặt sau thời điểm tiếp nhận 3 ngày.
-- Lý do: đáp ứng định dạng minh họa trong hợp đồng API và giúp kết quả demo nhất quán.
-- Ảnh hưởng: `src/backend/src/repositories/ticketRepository.js`.
-- Trạng thái: Đã kiểm tra tạo phiếu thành công. Quy tắc hạn 3 ngày hiện là giả định triển khai theo ví dụ, cần xác nhận trước khi coi là SLA chính thức.
+- Thay đổi: API tạo mã phiếu theo dạng `BH-xxxxxx/YYYY`; hạn xử lý được tính trong `TicketService` theo mức ưu tiên: `CAO` 1 ngày, `TRUNG_BINH` 3 ngày, `THAP` 5 ngày; khi tính SLA, bỏ qua Chủ nhật.
+- Lý do: Thay giả định cộng cố định 3 ngày lịch bằng quy tắc SLA theo mức ưu tiên và không tính Chủ nhật.
+- Ảnh hưởng: `src/backend/src/services/ticketService.js`, `src/backend/src/repositories/ticketRepository.js`.
+- Trạng thái: Đã kiểm chứng với phiếu `BH-000005/2026` ưu tiên Trung bình: tiếp nhận lúc 11:15 ngày 30/10/2026, hạn cam kết là 11:15 ngày 03/11/2026; tương ứng 3 ngày SLA sau khi bỏ qua Chủ nhật.
 
 ### TD-11 — Ghi lịch sử trạng thái khi tiếp nhận phiếu
 

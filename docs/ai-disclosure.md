@@ -32,7 +32,7 @@ Các nội dung do AI hỗ trợ được sinh viên xem xét, thực hiện và
 - Chạy ứng dụng Backend và Frontend trên máy cá nhân.
 - Thực hiện kiểm tra API với dữ liệu trong PostgreSQL.
 - Chạy bộ kiểm thử Backend bằng lệnh `npm test`.
-- Xác nhận kết quả 10 unit test PASS, 0 FAIL.
+- Xác nhận kết quả 11 unit test PASS, 0 FAIL.
 - Chạy `npm run build` để kiểm tra khả năng build Frontend.
 - Kiểm thử trực tiếp các luồng đăng nhập, tra cứu khách hàng, xem chi tiết, tạo phiếu, kiểm tra dữ liệu không hợp lệ và xử lý lỗi kết nối.
 - Đối chiếu hạn cam kết được lưu trong PostgreSQL với quy tắc nghiệp vụ trong SRS.

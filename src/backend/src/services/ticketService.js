@@ -1,8 +1,46 @@
-﻿const repository = require('../repositories/ticketRepository');
+const repository = require('../repositories/ticketRepository');
 
 const ALLOWED_PRIORITIES = ['CAO', 'TRUNG_BINH', 'THAP'];
 const ALLOWED_ACCESSORIES = ['SAC', 'TAI_NGHE', 'HOP', 'KHAC'];
 
+const BUSINESS_DAYS_BY_PRIORITY = Object.freeze({
+  CAO: 1,
+  TRUNG_BINH: 3,
+  THAP: 5,
+});
+
+const vietnamWeekdayFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  weekday: 'short',
+});
+
+function calculateDueDate(receivedAt, priority) {
+  const businessDays = BUSINESS_DAYS_BY_PRIORITY[priority];
+
+  if (!businessDays) {
+    throw new Error('Mức ưu tiên không hợp lệ khi tính hạn cam kết.');
+  }
+
+  const dueDate = new Date(receivedAt);
+
+  if (Number.isNaN(dueDate.getTime())) {
+    throw new TypeError('Thời điểm tiếp nhận không hợp lệ.');
+  }
+
+  let remainingDays = businessDays;
+
+  while (remainingDays > 0) {
+    dueDate.setTime(dueDate.getTime() + 24 * 60 * 60 * 1000);
+
+    const weekday = vietnamWeekdayFormatter.format(dueDate);
+
+    if (weekday !== 'Sun') {
+      remainingDays -= 1;
+    }
+  }
+
+  return dueDate;
+}
 function appError(statusCode, code, message, fields = {}) {
   const error = new Error(message);
   error.statusCode = statusCode;
@@ -290,7 +328,14 @@ async function create(input) {
   }
 
   try {
-    return await repository.create(data);
+    const receivedAt = new Date();
+    const dueDate = calculateDueDate(receivedAt, data.priority);
+
+    return await repository.create({
+      ...data,
+      received_at: receivedAt,
+      due_date: dueDate,
+    });
   } catch (error) {
     throw mapDatabaseError(error);
   }
@@ -456,6 +501,7 @@ async function cancel(id) {
 }
 
 module.exports = {
+  calculateDueDate,
   list,
   getById,
   create,

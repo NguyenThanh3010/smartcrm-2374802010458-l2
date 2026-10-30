@@ -122,6 +122,8 @@ async function create({
   category_id,
   issue_desc,
   priority,
+  received_at,
+  due_date,
   accessories,
 }) {
   const client = await pool.connect();
@@ -178,7 +180,7 @@ async function create({
        )
        VALUES (
          $1, $2, $3, $4, $5, $6, $7, 'MOI',
-         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '3 days', $8::JSONB
+         $8, $9, $10::JSONB
        )
        RETURNING ticket_id`,
       [
@@ -189,6 +191,8 @@ async function create({
         category_id,
         issue_desc,
         priority,
+        received_at,
+        due_date,
         accessoriesJson,
       ]
     );

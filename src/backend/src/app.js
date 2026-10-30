@@ -1,6 +1,9 @@
 ﻿const express = require('express');
+const authRoutes = require('./routes/authRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
+const lookupRoutes = require('./routes/lookupRoutes');
+const requireAuth = require('./auth/authMiddleware');
 const errorHandler = require('./errors/errorHandler');
 
 const app = express();
@@ -15,8 +18,13 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/api/customers', customerRoutes);
-app.use('/api/tickets', ticketRoutes);
+// Dang nhap la endpoint cong khai.
+app.use('/api/auth', authRoutes);
+
+// Cac API nghiep vu yeu cau Bearer token hop le.
+app.use('/api/customers', requireAuth, customerRoutes);
+app.use('/api/tickets', requireAuth, ticketRoutes);
+app.use('/api/lookups', requireAuth, lookupRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

@@ -108,3 +108,169 @@ test('Invalid data: từ chối mô tả ngắn hơn 10 ký tự', async () => {
     restoreRepository();
   }
 });
+
+test('Not found: từ chối khi thiết bị không tồn tại', async () => {
+  try {
+    stubValidRepository();
+    repository.findDevice = async () => null;
+
+    await assert.rejects(
+      ticketService.create({
+        customer_id: 1,
+        device_id: 99999,
+        center_id: 1,
+        category_id: 1,
+        issue_desc: 'Kiểm tra thiết bị không tồn tại',
+        priority: 'TRUNG_BINH',
+        accessories: [],
+      }),
+      (error) => {
+        assert.equal(error.statusCode, 404);
+        assert.equal(error.code, 'RESOURCE_NOT_FOUND');
+        assert.ok(error.fields.device_id);
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Validation: từ chối khi thiết bị không thuộc khách hàng', async () => {
+  try {
+    stubValidRepository();
+    repository.findDevice = async (id) => ({
+      device_id: id,
+      customer_id: '2',
+      purchase_date: new Date().toISOString().slice(0, 10),
+      warranty_months: 12,
+    });
+
+    await assert.rejects(
+      ticketService.create({
+        customer_id: 1,
+        device_id: 7,
+        center_id: 1,
+        category_id: 1,
+        issue_desc: 'Kiểm tra quyền sở hữu thiết bị',
+        priority: 'TRUNG_BINH',
+        accessories: [],
+      }),
+      (error) => {
+        assert.equal(error.code, 'VALIDATION_FAILED');
+        assert.ok(error.fields.device_id);
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Conflict: từ chối thiết bị đã có phiếu đang xử lý', async () => {
+  try {
+    stubValidRepository();
+    repository.findOpenByDevice = async () => ({
+      ticket_id: 'OLD-TICKET',
+      status: 'MOI',
+    });
+
+    await assert.rejects(
+      ticketService.create({
+        customer_id: 1,
+        device_id: 7,
+        center_id: 1,
+        category_id: 1,
+        issue_desc: 'Kiểm tra phiếu đang xử lý của thiết bị',
+        priority: 'TRUNG_BINH',
+        accessories: [],
+      }),
+      (error) => {
+        assert.equal(error.statusCode, 409);
+        assert.equal(error.code, 'ACTIVE_TICKET_EXISTS');
+        assert.ok(error.fields.device_id);
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Warranty: yêu cầu phê duyệt khi thiết bị đã hết hạn bảo hành', async () => {
+  try {
+    stubValidRepository();
+    repository.findDevice = async (id) => ({
+      device_id: id,
+      customer_id: '1',
+      purchase_date: '2020-01-01',
+      warranty_months: 12,
+    });
+
+    await assert.rejects(
+      ticketService.create({
+        customer_id: 1,
+        device_id: 7,
+        center_id: 1,
+        category_id: 1,
+        issue_desc: 'Kiểm tra thiết bị đã hết hạn bảo hành',
+        priority: 'TRUNG_BINH',
+        accessories: [],
+      }),
+      (error) => {
+        assert.equal(error.statusCode, 422);
+        assert.equal(error.code, 'WARRANTY_APPROVAL_REQUIRED');
+        assert.ok(error.fields.device_id);
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+
+test('Due date: ?p d?ng SLA theo ba m?c ?u ti?n v? b? qua Ch? nh?t', () => {
+  const receivedAt = new Date('2026-10-30T03:54:00.000Z');
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'CAO').toISOString(),
+    '2026-10-31T03:54:00.000Z'
+  );
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'TRUNG_BINH').toISOString(),
+    '2026-11-03T03:54:00.000Z'
+  );
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'THAP').toISOString(),
+    '2026-11-05T03:54:00.000Z'
+  );
+});
+
+test('Due date: ti?p nh?n v?o Ch? nh?t th? b?t ??u t?nh t? th? Hai', () => {
+  const receivedAt = new Date('2026-11-01T03:54:00.000Z');
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'CAO').toISOString(),
+    '2026-11-02T03:54:00.000Z'
+  );
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'TRUNG_BINH').toISOString(),
+    '2026-11-04T03:54:00.000Z'
+  );
+
+  assert.equal(
+    ticketService.calculateDueDate(receivedAt, 'THAP').toISOString(),
+    '2026-11-06T03:54:00.000Z'
+  );
+});
+
+test('Due date: invalid priority throws Error', () => {
+  assert.throws(
+    () => ticketService.calculateDueDate(new Date(), 'KHAN_CAP'),
+    Error
+  );
+});

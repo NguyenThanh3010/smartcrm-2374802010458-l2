@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 
 const ticketService = require('../src/backend/src/services/ticketService');
+const { getHttpStatus } = require('../src/backend/src/errors/errorHandler');
 const repository = require('../src/backend/src/repositories/ticketRepository');
 
 const originalRepository = { ...repository };
@@ -98,7 +99,6 @@ test('Invalid data: từ chối mô tả ngắn hơn 10 ký tự', async () => {
         accessories: ['SAC'],
       }),
       (error) => {
-        assert.equal(error.statusCode, 400);
         assert.equal(error.code, 'VALIDATION_FAILED');
         assert.ok(error.fields.issue_desc);
         return true;
@@ -125,7 +125,6 @@ test('Not found: từ chối khi thiết bị không tồn tại', async () => {
         accessories: [],
       }),
       (error) => {
-        assert.equal(error.statusCode, 404);
         assert.equal(error.code, 'RESOURCE_NOT_FOUND');
         assert.ok(error.fields.device_id);
         return true;
@@ -186,7 +185,6 @@ test('Conflict: từ chối thiết bị đã có phiếu đang xử lý', async
         accessories: [],
       }),
       (error) => {
-        assert.equal(error.statusCode, 409);
         assert.equal(error.code, 'ACTIVE_TICKET_EXISTS');
         assert.ok(error.fields.device_id);
         return true;
@@ -218,7 +216,6 @@ test('Warranty: yêu cầu phê duyệt khi thiết bị đã hết hạn bảo 
         accessories: [],
       }),
       (error) => {
-        assert.equal(error.statusCode, 422);
         assert.equal(error.code, 'WARRANTY_APPROVAL_REQUIRED');
         assert.ok(error.fields.device_id);
         return true;
@@ -273,4 +270,29 @@ test('Due date: invalid priority throws Error', () => {
     () => ticketService.calculateDueDate(new Date(), 'KHAN_CAP'),
     Error
   );
+});
+
+test('HTTP mapping: ma loi nghiep vu duoc anh xa dung status', () => {
+  const cases = [
+    ['INVALID_ID', 400],
+    ['VALIDATION_FAILED', 400],
+    ['INVALID_PHONE', 422],
+    ['WARRANTY_APPROVAL_REQUIRED', 422],
+    ['CUSTOMER_NOT_FOUND', 404],
+    ['RESOURCE_NOT_FOUND', 404],
+    ['ACTIVE_TICKET_EXISTS', 409],
+    ['DUPLICATE_VALUE', 409],
+    ['TICKET_CANNOT_BE_CANCELLED', 409],
+  ];
+
+  for (const [code, expectedStatus] of cases) {
+    assert.equal(
+      getHttpStatus({ code }),
+      expectedStatus,
+      `Ma loi ${code} phai tra HTTP ${expectedStatus}`
+    );
+  }
+
+  assert.equal(getHttpStatus({ code: 'UNKNOWN_ERROR' }), 500);
+  assert.equal(getHttpStatus(new Error('Unexpected error')), 500);
 });

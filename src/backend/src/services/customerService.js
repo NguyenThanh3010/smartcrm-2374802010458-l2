@@ -1,8 +1,7 @@
 ﻿const repository = require('../repositories/customerRepository');
 
-function appError(statusCode, code, message) {
+function appError(code, message) {
   const error = new Error(message);
-  error.statusCode = statusCode;
   error.code = code;
   return error;
 }
@@ -11,7 +10,7 @@ function validateId(id) {
   const value = String(id ?? '');
 
   if (!/^[1-9]\d*$/.test(value)) {
-    throw appError(400, 'INVALID_ID', 'ID phải là số nguyên dương.');
+    throw appError('INVALID_ID', 'ID phải là số nguyên dương.');
   }
 
   return value;
@@ -19,7 +18,7 @@ function validateId(id) {
 
 function validateCustomer(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    throw appError(400, 'INVALID_BODY', 'Dữ liệu khách hàng không hợp lệ.');
+    throw appError('INVALID_BODY', 'Dữ liệu khách hàng không hợp lệ.');
   }
 
   const full_name =
@@ -31,25 +30,19 @@ function validateCustomer(input) {
     typeof input.address === 'string' ? input.address.trim() : undefined;
 
   if (!full_name || full_name.length > 120) {
-    throw appError(
-      422,
-      'INVALID_FULL_NAME',
+    throw appError('INVALID_FULL_NAME',
       'Họ tên không được để trống và tối đa 120 ký tự.'
     );
   }
 
   if (!/^0\d{9}$/.test(phone)) {
-    throw appError(
-      422,
-      'INVALID_PHONE',
+    throw appError('INVALID_PHONE',
       'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.'
     );
   }
 
   if (address === undefined || (address !== null && address.length > 255)) {
-    throw appError(
-      422,
-      'INVALID_ADDRESS',
+    throw appError('INVALID_ADDRESS',
       'Địa chỉ phải là chuỗi tối đa 255 ký tự hoặc để trống.'
     );
   }
@@ -59,13 +52,11 @@ function validateCustomer(input) {
 
 function mapDatabaseError(error) {
   if (error.code === '23505') {
-    return appError(409, 'DUPLICATE_VALUE', 'Số điện thoại đã tồn tại.');
+    return appError('DUPLICATE_VALUE', 'Số điện thoại đã tồn tại.');
   }
 
   if (error.code === '23503') {
-    return appError(
-      409,
-      'RELATED_RECORD_EXISTS',
+    return appError('RELATED_RECORD_EXISTS',
       'Không thể xóa khách hàng vì vẫn còn dữ liệu liên quan.'
     );
   }
@@ -84,9 +75,7 @@ async function list({ limit = 50, offset = 0 } = {}) {
     !Number.isInteger(parsedOffset) ||
     parsedOffset < 0
   ) {
-    throw appError(
-      400,
-      'INVALID_PAGINATION',
+    throw appError('INVALID_PAGINATION',
       'limit phải từ 1 đến 100 và offset phải là số nguyên không âm.'
     );
   }
@@ -98,7 +87,7 @@ async function getById(id) {
   const customer = await repository.findById(validateId(id));
 
   if (!customer) {
-    throw appError(404, 'CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
+    throw appError('CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
   }
 
   return customer;
@@ -106,9 +95,7 @@ async function getById(id) {
 
 async function getByPhone(phone) {
   if (typeof phone !== 'string' || !/^0\d{9}$/.test(phone.trim())) {
-    throw appError(
-      422,
-      'INVALID_PHONE',
+    throw appError('INVALID_PHONE',
       'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.'
     );
   }
@@ -116,7 +103,7 @@ async function getByPhone(phone) {
   const customer = await repository.findByPhone(phone.trim());
 
   if (!customer) {
-    throw appError(404, 'CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
+    throw appError('CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
   }
 
   return customer;
@@ -129,7 +116,7 @@ async function create(input) {
     const existing = await repository.findByPhone(data.phone);
 
     if (existing) {
-      throw appError(409, 'PHONE_EXISTS', 'Số điện thoại đã tồn tại.');
+      throw appError('PHONE_EXISTS', 'Số điện thoại đã tồn tại.');
     }
 
     return await repository.create(data);
@@ -145,7 +132,7 @@ async function update(id, input) {
   const existingCustomer = await repository.findById(customerId);
 
   if (!existingCustomer) {
-    throw appError(404, 'CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
+    throw appError('CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
   }
 
   try {
@@ -155,7 +142,7 @@ async function update(id, input) {
       phoneOwner &&
       String(phoneOwner.customer_id) !== String(customerId)
     ) {
-      throw appError(409, 'PHONE_EXISTS', 'Số điện thoại đã tồn tại.');
+      throw appError('PHONE_EXISTS', 'Số điện thoại đã tồn tại.');
     }
 
     return await repository.update(customerId, data);
@@ -169,7 +156,7 @@ async function remove(id) {
   const existingCustomer = await repository.findById(customerId);
 
   if (!existingCustomer) {
-    throw appError(404, 'CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
+    throw appError('CUSTOMER_NOT_FOUND', 'Không tìm thấy khách hàng.');
   }
 
   try {

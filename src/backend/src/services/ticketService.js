@@ -41,18 +41,15 @@ function calculateDueDate(receivedAt, priority) {
 
   return dueDate;
 }
-function appError(statusCode, code, message, fields = {}) {
+function appError(code, message, fields = {}) {
   const error = new Error(message);
-  error.statusCode = statusCode;
   error.code = code;
   error.fields = fields;
   return error;
 }
 
 function validationError(fields) {
-  return appError(
-    400,
-    'VALIDATION_FAILED',
+  return appError('VALIDATION_FAILED',
     'Dữ liệu không hợp lệ',
     fields
   );
@@ -194,17 +191,13 @@ function getTodayInVietnam() {
 
 function mapDatabaseError(error) {
   if (error.code === '23505') {
-    return appError(
-      409,
-      'DUPLICATE_VALUE',
+    return appError('DUPLICATE_VALUE',
       'Dữ liệu bị trùng với bản ghi đã tồn tại'
     );
   }
 
   if (error.code === '23503') {
-    return appError(
-      404,
-      'RESOURCE_NOT_FOUND',
+    return appError('RESOURCE_NOT_FOUND',
       'Không tìm thấy dữ liệu được tham chiếu'
     );
   }
@@ -236,9 +229,7 @@ async function getById(id) {
   const ticket = await repository.findById(ticketId);
 
   if (!ticket) {
-    throw appError(
-      404,
-      'TICKET_NOT_FOUND',
+    throw appError('TICKET_NOT_FOUND',
       'Không tìm thấy phiếu bảo hành',
       { id: 'Không tìm thấy phiếu bảo hành' }
     );
@@ -253,9 +244,7 @@ async function create(input) {
   const customer = await repository.findCustomer(data.customer_id);
 
   if (!customer) {
-    throw appError(
-      404,
-      'RESOURCE_NOT_FOUND',
+    throw appError('RESOURCE_NOT_FOUND',
       'Không tìm thấy khách hàng hoặc thiết bị được tham chiếu',
       { customer_id: 'Không tìm thấy khách hàng' }
     );
@@ -264,9 +253,7 @@ async function create(input) {
   const device = await repository.findDevice(data.device_id);
 
   if (!device) {
-    throw appError(
-      404,
-      'RESOURCE_NOT_FOUND',
+    throw appError('RESOURCE_NOT_FOUND',
       'Không tìm thấy khách hàng hoặc thiết bị được tham chiếu',
       { device_id: 'Không tìm thấy thiết bị' }
     );
@@ -297,9 +284,7 @@ async function create(input) {
   const activeTicket = await repository.findOpenByDevice(data.device_id);
 
   if (activeTicket) {
-    throw appError(
-      409,
-      'ACTIVE_TICKET_EXISTS',
+    throw appError('ACTIVE_TICKET_EXISTS',
       'Thiết bị đang có phiếu bảo hành chưa đóng',
       { device_id: 'Thiết bị đã có phiếu bảo hành đang xử lý' }
     );
@@ -316,9 +301,7 @@ async function create(input) {
     );
 
     if (getTodayInVietnam() > expiresOn) {
-      throw appError(
-        422,
-        'WARRANTY_APPROVAL_REQUIRED',
+      throw appError('WARRANTY_APPROVAL_REQUIRED',
         'Thiết bị đã hết thời hạn bảo hành và chưa có phê duyệt',
         {
           device_id: 'Cần quản lý phê duyệt trước khi tiếp tục xử lý',
@@ -346,18 +329,14 @@ async function update(id, input) {
   const current = await repository.findById(ticketId);
 
   if (!current) {
-    throw appError(
-      404,
-      'TICKET_NOT_FOUND',
+    throw appError('TICKET_NOT_FOUND',
       'Không tìm thấy phiếu bảo hành',
       { id: 'Không tìm thấy phiếu bảo hành' }
     );
   }
 
   if (current.status === 'HUY') {
-    throw appError(
-      409,
-      'TICKET_CANCELLED',
+    throw appError('TICKET_CANCELLED',
       'Không thể cập nhật phiếu đã hủy'
     );
   }
@@ -457,7 +436,7 @@ async function update(id, input) {
     });
 
     if (!updated) {
-      throw appError(409, 'TICKET_NOT_EDITABLE', 'Phiếu không thể cập nhật');
+      throw appError('TICKET_NOT_EDITABLE', 'Phiếu không thể cập nhật');
     }
 
     return updated;
@@ -471,18 +450,14 @@ async function cancel(id) {
   const current = await repository.findById(ticketId);
 
   if (!current) {
-    throw appError(
-      404,
-      'TICKET_NOT_FOUND',
+    throw appError('TICKET_NOT_FOUND',
       'Không tìm thấy phiếu bảo hành',
       { id: 'Không tìm thấy phiếu bảo hành' }
     );
   }
 
   if (current.status !== 'MOI') {
-    throw appError(
-      409,
-      'TICKET_CANNOT_BE_CANCELLED',
+    throw appError('TICKET_CANNOT_BE_CANCELLED',
       'Chỉ có thể hủy phiếu đang ở trạng thái MOI'
     );
   }
@@ -490,9 +465,7 @@ async function cancel(id) {
   const cancelled = await repository.cancel(ticketId);
 
   if (!cancelled) {
-    throw appError(
-      409,
-      'TICKET_CANNOT_BE_CANCELLED',
+    throw appError('TICKET_CANNOT_BE_CANCELLED',
       'Phiếu không thể hủy ở trạng thái hiện tại'
     );
   }

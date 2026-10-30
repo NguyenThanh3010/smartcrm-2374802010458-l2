@@ -146,7 +146,6 @@ async function create({
 
     if (active.rowCount > 0) {
       const error = new Error('Thiết bị đang có phiếu bảo hành chưa đóng.');
-      error.statusCode = 409;
       error.code = 'ACTIVE_TICKET_EXISTS';
       throw error;
     }

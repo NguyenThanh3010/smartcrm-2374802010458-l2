@@ -1,4 +1,4 @@
-# Smart CRM – Tiếp nhận và phân loại yêu cầu bảo hành
+﻿# Smart CRM – Tiếp nhận và phân loại yêu cầu bảo hành
 
 **Sinh viên:** Nguyễn Quốc Thành – MSSV: 2374802010458
 **Track:** SE
@@ -72,7 +72,10 @@ smartcrm-2374802010458-l2/
 │   ├── srs.md
 │   ├── thay-doi-thiet-ke.md
 │   ├── bug-log.md
-│   └── ai-disclosure.md
+│   ├── ai-disclosure.md
+│   ├── test-plan.md
+│   └── security-test.md
+│
 ├── src/
 │   ├── backend/
 │   │   ├── migrations/
@@ -90,6 +93,7 @@ smartcrm-2374802010458-l2/
 │   │   ├── seed.js
 │   │   ├── package.json
 │   │   └── package-lock.json
+│   │
 │   └── frontend/
 │       ├── public/
 │       ├── src/
@@ -101,13 +105,15 @@ smartcrm-2374802010458-l2/
 │       ├── vite.config.js
 │       ├── package.json
 │       └── package-lock.json
+│
 ├── tests/
-│   └── ticket-service.test.js
+│   ├── ticket-service.test.js
+│   ├── customer-repository.integration.test.js
+│   └── api-system.test.js
 ├── .env.example
 ├── .gitignore
 └── README.md
 ```
-
 ## 4. Cài đặt và cấu hình
 
 Các lệnh dưới đây sử dụng Windows PowerShell.
@@ -258,79 +264,161 @@ Các endpoint khách hàng, phiếu bảo hành và lookup đều được bảo
 
 ## 9. Kiểm thử và Build
 
-### Chạy Backend unit tests
+### 9.1. Chuẩn bị database kiểm thử
 
-Mở terminal tại thư mục `src/backend`:
+Dự án sử dụng database riêng `smartcrm_test` cho Integration Test và API / System Test nhằm tránh ảnh hưởng đến database chính `smartcrm`.
+
+Chỉ thực hiện bước tạo database nếu database `smartcrm_test` chưa tồn tại. Nếu đã có database này, bỏ qua bước tạo và chuyển sang bước tiếp theo. Mở PowerShell tại thư mục gốc dự án và chạy:
+
+```powershell
+psql -U postgres -h localhost -p 5432 -d postgres -c "CREATE DATABASE smartcrm_test;"
+```
+
+Nếu máy chưa nhận lệnh `psql`, cần sử dụng đường dẫn đầy đủ đến file `psql.exe` đã cài đặt.
+
+### 9.2. Chạy Backend tests
+
+Mở PowerShell tại thư mục gốc dự án:
+
+```powershell
+Set-Location ".\src\backend"
+$env:DB_NAME = "smartcrm_test"
+```
+
+Khởi tạo cấu trúc và dữ liệu mẫu cho database kiểm thử:
+
+```powershell
+node .\migrate.js
+node .\seed.js
+```
+
+Chạy toàn bộ bộ kiểm thử tự động:
 
 ```powershell
 npm test
 ```
 
-Bộ kiểm thử sử dụng `node:test`, không yêu cầu kết nối cơ sở dữ liệu để chạy các unit test nghiệp vụ.
+Bộ kiểm thử sử dụng Node.js built-in test runner (`node:test`), gồm ba tầng:
 
-Các nhóm kiểm thử hiện có:
+| Tầng kiểm thử | Số lượng |
+|---|---:|
+| Unit Test | 11 |
+| Integration Test | 2 |
+| API / System Test | 3 |
+| **Tổng cộng** | **16** |
 
-- Happy path: tạo phiếu với dữ liệu hợp lệ.
-- Boundary: mô tả đúng giới hạn 10 ký tự.
-- Invalid data: mô tả ngắn hơn giới hạn.
-- Not found: thiết bị không tồn tại.
-- Validation: thiết bị không thuộc khách hàng.
-- Conflict: thiết bị đã có phiếu đang xử lý.
-- Warranty: thiết bị hết hạn bảo hành.
-- Due date: ba mức ưu tiên và quy tắc bỏ qua Chủ nhật.
-- Due date: tiếp nhận vào Chủ nhật.
-- Due date: mức ưu tiên không hợp lệ.
-- HTTP mapping: mã lỗi nghiệp vụ được ánh xạ đúng sang HTTP status.
-
-Kết quả kiểm thử đã xác nhận trong quá trình triển khai: **11 tests, 11 PASS, 0 FAIL**.
-
-### Build Frontend
-
-Mở terminal tại thư mục `src/frontend`:
+Các lệnh chạy riêng từng tầng kiểm thử:
 
 ```powershell
+npm run test:unit
+npm run test:integration
+npm run test:api
+```
+
+Ý nghĩa các tầng kiểm thử:
+
+- **Unit Test:** Kiểm tra logic nghiệp vụ tạo phiếu, xác thực dữ liệu, hạn bảo hành và ngày hẹn.
+- **Integration Test:** Kiểm tra tương tác giữa Repository và PostgreSQL.
+- **API / System Test:** Kiểm tra API tạo phiếu, dữ liệu đầu vào và cơ chế xác thực Bearer token.
+
+Kết quả kiểm thử đã xác nhận: **16 tests, 16 PASS, 0 FAIL**.
+
+Lưu ý: Khi mở một cửa sổ PowerShell mới, cần thiết lập lại biến môi trường `$env:DB_NAME = "smartcrm_test"` trước khi chạy Integration Test hoặc API / System Test.
+
+### 9.3. Kiểm tra bảo mật Backend
+
+Mở Terminal tại thư mục `src/backend`:
+
+```powershell
+npm audit
+```
+
+Lệnh này kiểm tra các thư viện phụ thuộc Backend và những lỗ hổng bảo mật đã được công bố.
+
+### 9.4. Build Frontend
+
+Mở Terminal tại thư mục `src/frontend`:
+
+```powershell
+npm ci
+npm audit
 npm run build
 ```
 
-### Kiểm tra ESLint
+Lệnh `npm run build` tạo bản build production của ứng dụng React.
+
+### 9.5. Kiểm tra ESLint
+
+Tại thư mục `src/frontend`, chạy:
 
 ```powershell
 npm run lint
 ```
 
+ESLint được sử dụng để kiểm tra các vấn đề về cú pháp và quy tắc chất lượng mã nguồn Frontend.
+
+### 9.6. Kiểm thử bảo mật thủ công
+
+Dự án đã thực hiện một số kiểm tra bảo mật thủ công ở mức cơ bản theo OWASP Top 10:2025, tập trung vào A02 (Security Misconfiguration), A05 (Injection) và A07 (Authentication Failures).
+
+A04 (Cryptographic Failures) mới được kiểm tra một phần thông qua cấu hình AUTH_TOKEN_SECRET. A01 (Broken Access Control) chưa được kiểm thử đầy đủ do phiên bản hiện tại chưa có đầy đủ cơ chế phân quyền và sở hữu dữ liệu theo người dùng.
+
+Ngoài ra, dự án có kiểm tra bổ sung việc xử lý JSON không hợp lệ. Các kết quả và giới hạn kiểm thử được ghi nhận tại `docs/security-test.md`.
+
+Chi tiết kết quả được ghi nhận tại:
+
+- `docs/security-test.md`: Báo cáo kiểm tra bảo mật.
+- `docs/screenshots/`: Ảnh minh chứng kết quả kiểm tra.
+
 ## 10. Trạng thái triển khai BT2
 
-### Đã triển khai và kiểm tra
+### 10.1. Các chức năng đã triển khai
 
-- Backend phân lớp Routes, Services và Repositories.
+- Backend được tổ chức theo các lớp Routes, Services và Repositories.
 - Database migration và seed dữ liệu mẫu.
-- Nghiệp vụ tạo phiếu, kiểm tra dữ liệu đầu vào và chống tạo phiếu trùng trên thiết bị.
+- Nghiệp vụ tiếp nhận phiếu bảo hành.
+- Kiểm tra dữ liệu đầu vào và chống tạo phiếu trùng trên cùng thiết bị.
 - Xác thực đăng nhập và Bearer token.
-- Frontend React kết nối API thực tế.
+- Frontend React kết nối với Backend API.
 - API tra cứu nhóm sự cố và trung tâm bảo hành.
-- Ba trạng thái giao diện loading, empty và error; có chức năng retry.
+- Xử lý các trạng thái giao diện loading, empty và error; có chức năng retry.
 - Xử lý HTTP 401: xóa thông tin phiên và quay lại màn hình đăng nhập.
-- Tính hạn cam kết theo mức ưu tiên, bỏ qua Chủ nhật.
-- 11 unit tests PASS.
+- Tính hạn cam kết theo mức ưu tiên và quy tắc bỏ qua Chủ nhật.
+
+### 10.2. Kết quả kiểm thử
+
+- Unit Test: 11/11 PASS.
+- Integration Test: 2/2 PASS.
+- API / System Test: 3/3 PASS.
+- Tổng cộng: 16/16 automated tests PASS.
+- Migration và Seed chạy lại thành công trên database kiểm thử.
 - Frontend production build thành công.
+- Frontend ESLint không phát hiện lỗi.
+- Kiểm tra bảo mật thủ công: A02, A05 và A07 đạt kết quả trong phạm vi đã thực hiện; A04 mới kiểm tra một phần; A01 chưa kiểm thử đầy đủ.
+- Đã tích hợp Helmet để thiết lập HTTP Security Headers.
+- Backend `npm audit`: 0 vulnerabilities.
+- Frontend `npm audit`: 0 vulnerabilities.
 
-### C?n ki?m ch?ng b? sung tr??c khi n?p
+### 10.3. Công việc cần kiểm chứng bổ sung
 
-- Clone repo GitHub vào thư mục mới và thực hiện đầy đủ quy trình cài đặt, cấu hình và chạy theo README để xác nhận khả năng tái lập.
+- Clone repository GitHub vào thư mục mới và thực hiện đầy đủ quy trình cài đặt, cấu hình, khởi tạo database và chạy thử để xác nhận khả năng tái lập trên môi trường mới.
 
 ## 11. Tài liệu liên quan
 
-- `docs/srs.md`: đặc tả yêu cầu phần mềm.
-- `docs/api-contract.md`: hợp đồng API.
-- `docs/ddl.sql`: cấu trúc cơ sở dữ liệu.
-- `docs/erd.drawio`: sơ đồ thực thể và quan hệ.
-- `docs/architecture.drawio`: sơ đồ kiến trúc đã thiết kế.
-- `docs/architecture-thuc-te.drawio`: Actual implemented architecture diagram for BT2.
-- `docs/thay-doi-thiet-ke.md`: ghi nhận các thay đổi thiết kế.
-- `docs/bug-log.md`: Actual bugs encountered and their fixes.
-- `docs/ai-disclosure.md`: AI tool usage disclosure.
-- `docs/wireframes/`: thiết kế giao diện.
-- `docs/screenshots/`: ảnh minh chứng quá trình triển khai và kiểm thử.
+- `docs/srs.md`: Đặc tả yêu cầu phần mềm.
+- `docs/api-contract.md`: Hợp đồng API.
+- `docs/ddl.sql`: Cấu trúc cơ sở dữ liệu.
+- `docs/erd.drawio`: Sơ đồ thực thể và quan hệ.
+- `docs/architecture.drawio`: Sơ đồ kiến trúc đã thiết kế.
+- `docs/architecture-thuc-te.drawio`: Sơ đồ kiến trúc thực tế đã triển khai trong BT2.
+- `docs/thay-doi-thiet-ke.md`: Ghi nhận các thay đổi thiết kế.
+- `docs/bug-log.md`: Ghi nhận lỗi phát sinh và cách khắc phục.
+- `docs/ai-disclosure.md`: Khai báo sử dụng công cụ AI.
+- `docs/test-plan.md`: Kế hoạch kiểm thử và kết quả thực hiện.
+- `docs/security-test.md`: Báo cáo kiểm tra bảo mật.
+- `docs/wireframes/`: Thiết kế giao diện.
+- `docs/screenshots/`: Ảnh minh chứng quá trình triển khai và kiểm thử.
+- `tests/`: Các file kiểm thử tự động Unit, Integration và API / System.
 
 ## 12. Khai báo sử dụng công cụ AI
 

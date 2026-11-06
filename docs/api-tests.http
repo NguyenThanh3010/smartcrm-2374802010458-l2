@@ -1,0 +1,118 @@
+### SMART CRM L02 - API TESTS
+### Base URL
+@baseUrl = http://localhost:3000
+
+### Thay các giá trị bên dưới bằng thông tin thử nghiệm của bạn.
+### Không ghi mật khẩu thật hoặc token thật vào Git.
+@token = PASTE_TOKEN_HERE
+@customerId = 1
+@deviceId = 1
+@centerId = 1
+@categoryId = 1
+@ticketId = 1
+
+### 1. Kiểm tra Backend
+GET {{baseUrl}}/
+Accept: application/json
+
+###
+
+### 2. Đăng nhập
+### Thay username và password bằng tài khoản demo trong file .env.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "YOUR_DEMO_USERNAME",
+  "password": "YOUR_DEMO_PASSWORD"
+}
+
+###
+
+### 3. Kiểm tra API khi không có Bearer token
+GET {{baseUrl}}/api/tickets
+Accept: application/json
+
+###
+
+### 4. Lấy danh sách khách hàng
+GET {{baseUrl}}/api/customers?limit=10&offset=0
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 5. Tra cứu khách hàng theo số điện thoại
+GET {{baseUrl}}/api/customers?phone=0901234567
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 6. Kiểm tra dữ liệu tìm kiếm có dấu hiệu SQL Injection
+GET {{baseUrl}}/api/customers?phone=0901234567%27%20OR%20%271%27%3D%271
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 7. Lấy danh sách nhóm sự cố
+GET {{baseUrl}}/api/lookups/issue-categories
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 8. Lấy danh sách trung tâm bảo hành
+GET {{baseUrl}}/api/lookups/service-centers
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 9. Lấy danh sách phiếu bảo hành
+GET {{baseUrl}}/api/tickets?limit=10&offset=0
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### 10. Tạo phiếu bảo hành hợp lệ
+### Cần thay các ID bên trên bằng ID có thật trong database.
+POST {{baseUrl}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "customer_id": {{customerId}},
+  "device_id": {{deviceId}},
+  "center_id": {{centerId}},
+  "category_id": {{categoryId}},
+  "issue_desc": "Kiểm tra lỗi màn hình thiết bị",
+  "priority": "TRUNG_BINH",
+  "accessories": ["SAC"]
+}
+
+###
+
+### 11. Tạo phiếu với mô tả dưới 10 ký tự
+POST {{baseUrl}}/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "customer_id": {{customerId}},
+  "device_id": {{deviceId}},
+  "center_id": {{centerId}},
+  "category_id": {{categoryId}},
+  "issue_desc": "Lỗi màn",
+  "priority": "TRUNG_BINH",
+  "accessories": ["SAC"]
+}
+
+###
+
+### 12. Lấy chi tiết phiếu bảo hành
+GET {{baseUrl}}/api/tickets/{{ticketId}}
+Accept: application/json
+Authorization: Bearer {{token}}

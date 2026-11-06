@@ -96,3 +96,29 @@
 ## C. Lưu ý trạng thái
 
 Nhật ký này ghi nhận cả công việc đã hoàn thành và các điều chỉnh hồ sơ còn chờ thực hiện. Không xem các mục có trạng thái “Chưa cập nhật” là đã hoàn tất.
+
+## D. Xử lý phản hồi Bài tập 2
+
+### TD-12 — Rà soát độ dài báo cáo BT2
+
+- **Phản hồi:** Báo cáo dài so với gợi ý 6–9 trang.
+- **Quyết định:** SỬA.
+- **Lý do:** Báo cáo cần tập trung vào kết quả triển khai, kiến trúc thực tế, kiểm thử và các minh chứng quan trọng; hạn chế nội dung lặp lại.
+- **Cách xử lý:** Rà soát và rút gọn nội dung trùng lặp, tập trung vào kết quả triển khai và minh chứng.
+- **Trạng thái:** Chưa xác nhận hoàn thành; cần đối chiếu lại đúng bản báo cáo được giảng viên nhận xét.
+
+### TD-13 — Bổ sung liên kết GitHub có thể nhấn trên trang bìa
+
+- **Phản hồi:** Link repository chỉ xuất hiện trong ảnh trang bìa nên người chấm không thể nhấn để mở.
+- **Quyết định:** SỬA.
+- **Lý do:** Giảng viên cần truy cập trực tiếp repository để kiểm tra mã nguồn và lịch sử commit.
+- **Cách xử lý:** Đặt địa chỉ `https://github.com/NguyenThanh3010/smartcrm-2374802010458-l2` dưới dạng hyperlink thực sự trong tài liệu Word, bên ngoài ảnh trang bìa. Kiểm tra khả năng mở link ở cửa sổ ẩn danh.
+- **Trạng thái:** Cần cập nhật và kiểm tra lại liên kết trong bản Word/PDF dùng để nộp.
+
+### TD-14 — Kết quả mục kiểm chứng bảng 4.2
+
+- **Phản hồi:** Mục kiểm chứng bảng 4.2 đạt đủ các mục chung và các mục theo track.
+- **Quyết định:** GIỮ NGUYÊN.
+- **Lý do:** Giảng viên đã xác nhận các nội dung kiểm chứng này đáp ứng yêu cầu.
+- **Ảnh hưởng:** Không cần thay đổi nội dung bảng 4.2.
+- **Trạng thái:** Giữ nguyên theo nhận xét của giảng viên.

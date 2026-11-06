@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test ../../tests/ticket-service.test.js",
+    "test": "npm run test:unit && npm run test:integration && npm run test:api",
+    "test:unit": "node --test ../../tests/ticket-service.test.js",
+    "test:integration": "node --test ../../tests/customer-repository.integration.test.js",
+    "test:api": "node --test ../../tests/api-system.test.js",
     "start": "node index.js"
   },
   "keywords": [],

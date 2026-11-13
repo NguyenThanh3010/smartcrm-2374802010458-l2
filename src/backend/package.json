@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:unit && npm run test:integration && npm run test:api",
+    "test": "npm run test:unit && npm run test:integration && npm run test:api && npm run test:crypto",
     "test:unit": "node --test ../../tests/ticket-service.test.js",
     "test:integration": "node --test ../../tests/customer-repository.integration.test.js",
     "test:api": "node --test ../../tests/api-system.test.js",
+    "test:crypto": "node --test ../../tests/customer-crypto.test.js",
     "start": "node index.js"
   },
   "keywords": [],
@@ -15,6 +16,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
     "helmet": "^8.3.0",

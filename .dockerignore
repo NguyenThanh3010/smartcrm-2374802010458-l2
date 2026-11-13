@@ -1,0 +1,30 @@
+﻿# Git
+.git
+.git/**
+
+# Environment variables and secrets
+.env
+**/.env
+**/.env.*
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build output
+**/dist
+**/coverage
+**/.vite
+
+# Logs
+npm-debug.log*
+*.log
+
+# IDE and operating system
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Documentation is not needed in runtime images
+docs

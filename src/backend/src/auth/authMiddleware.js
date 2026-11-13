@@ -1,4 +1,6 @@
-﻿const authService = require('./authService');
+﻿
+const authService = require('./authService');
+const userRepository = require('../repositories/userRepository');
 
 function sendUnauthorized(res, code, message) {
   return res.status(401).json({
@@ -9,7 +11,7 @@ function sendUnauthorized(res, code, message) {
   });
 }
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   if (!authService.isConfigured()) {
     return res.status(503).json({
       error: {
@@ -26,7 +28,7 @@ function requireAuth(req, res, next) {
     return sendUnauthorized(
       res,
       'AUTH_REQUIRED',
-      'Vui lòng đăng nhập để tiếp tục.'
+      'Vui lòng đăng nhập để tiếp tục.',
     );
   }
 
@@ -36,15 +38,31 @@ function requireAuth(req, res, next) {
     return sendUnauthorized(
       res,
       'AUTH_TOKEN_INVALID',
-      'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.'
+      'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.',
     );
   }
 
-  req.auth = {
-    username: payload.sub,
-  };
+  try {
+    const account = await userRepository.findActiveById(payload.id);
 
-  return next();
+    if (!account) {
+      return sendUnauthorized(
+        res,
+        'AUTH_TOKEN_INVALID',
+        'Tài khoản không còn hoạt động. Vui lòng đăng nhập lại.',
+      );
+    }
+
+    req.auth = {
+      id: String(account.user_id),
+      username: account.username,
+      role: account.role,
+    };
+
+    return next();
+  } catch (error) {
+    return next(error);
+  }
 }
 
 module.exports = requireAuth;

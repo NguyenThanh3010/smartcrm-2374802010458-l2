@@ -3,6 +3,8 @@
   INVALID_BODY: 400,
   INVALID_PAGINATION: 400,
   VALIDATION_FAILED: 400,
+  INVALID_USERNAME: 400,
+  INVALID_PASSWORD: 400,
 
   INVALID_FULL_NAME: 422,
   INVALID_PHONE: 422,
@@ -15,6 +17,7 @@
 
   PHONE_EXISTS: 409,
   DUPLICATE_VALUE: 409,
+  USERNAME_EXISTS: 409,
   RELATED_RECORD_EXISTS: 409,
   ACTIVE_TICKET_EXISTS: 409,
   TICKET_CANCELLED: 409,
@@ -55,24 +58,28 @@ function errorHandler(error, req, res, next) {
   }
 
   const statusCode = getHttpStatus(error);
-
-  if (statusCode >= 500) {
-    console.error('[API ERROR]', error);
+  const isServerError = statusCode >= 500;
+  if (isServerError) {
+    console.error('[API ERROR]', {
+      name: error.name,
+      code: error.code || 'UNKNOWN',
+      statusCode,
+    });
   }
 
   const body = {
     code:
-      statusCode === 500
+      isServerError
         ? 'INTERNAL_SERVER_ERROR'
         : error.code || 'REQUEST_ERROR',
     message:
-      statusCode === 500
+      isServerError
         ? 'Đã xảy ra lỗi nội bộ.'
         : error.message,
   };
 
   if (
-    statusCode !== 500 &&
+    !isServerError &&
     error.fields &&
     typeof error.fields === 'object'
   ) {

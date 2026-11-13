@@ -55,6 +55,25 @@ function validationError(fields) {
   );
 }
 
+function getAuthContext(auth) {
+  const userId = String(auth?.id ?? '');
+
+  if (
+    !['ADMIN', 'STAFF'].includes(auth?.role) ||
+    !/^[1-9]\d*$/.test(userId)
+  ) {
+    const error = new Error('Yêu cầu đăng nhập hợp lệ.');
+    error.code = 'AUTH_REQUIRED';
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return {
+    userId,
+    ownerId: auth.role === 'ADMIN' ? null : userId,
+  };
+}
+
 function validateId(value, fieldName) {
   const text = String(value ?? '');
 
@@ -205,7 +224,9 @@ function mapDatabaseError(error) {
   return error;
 }
 
-async function list({ limit = 50, offset = 0 } = {}) {
+async function list({ limit = 50, offset = 0 } = {}, auth) {
+  const { ownerId } = getAuthContext(auth);
+
   const parsedLimit = Number(limit);
   const parsedOffset = Number(offset);
 
@@ -221,15 +242,21 @@ async function list({ limit = 50, offset = 0 } = {}) {
     });
   }
 
-  return repository.list({ limit: parsedLimit, offset: parsedOffset });
+  return repository.list({
+    limit: parsedLimit,
+    offset: parsedOffset,
+    ownerId,
+  });
 }
 
-async function getById(id) {
+async function getById(id, auth) {
+  const { ownerId } = getAuthContext(auth);
   const ticketId = validateId(id, 'id');
-  const ticket = await repository.findById(ticketId);
+  const ticket = await repository.findById(ticketId, ownerId);
 
   if (!ticket) {
-    throw appError('TICKET_NOT_FOUND',
+    throw appError(
+      'TICKET_NOT_FOUND',
       'Không tìm thấy phiếu bảo hành',
       { id: 'Không tìm thấy phiếu bảo hành' }
     );
@@ -238,7 +265,8 @@ async function getById(id) {
   return ticket;
 }
 
-async function create(input) {
+async function create(input, auth) {
+  const { userId } = getAuthContext(auth);
   const data = validateTicketInput(input);
 
   const customer = await repository.findCustomer(data.customer_id);
@@ -316,6 +344,7 @@ async function create(input) {
 
     return await repository.create({
       ...data,
+      created_by: userId,
       received_at: receivedAt,
       due_date: dueDate,
     });
@@ -324,9 +353,10 @@ async function create(input) {
   }
 }
 
-async function update(id, input) {
+async function update(id, input, auth) {
+  const { ownerId } = getAuthContext(auth);
   const ticketId = validateId(id, 'id');
-  const current = await repository.findById(ticketId);
+  const current = await repository.findById(ticketId, ownerId);
 
   if (!current) {
     throw appError('TICKET_NOT_FOUND',
@@ -433,7 +463,7 @@ async function update(id, input) {
       priority: merged.priority,
       due_date: dueDate.toISOString(),
       accessories: merged.accessories ?? null,
-    });
+    }, ownerId);
 
     if (!updated) {
       throw appError('TICKET_NOT_EDITABLE', 'Phiếu không thể cập nhật');
@@ -445,9 +475,10 @@ async function update(id, input) {
   }
 }
 
-async function cancel(id) {
+async function cancel(id, auth) {
+  const { ownerId } = getAuthContext(auth);
   const ticketId = validateId(id, 'id');
-  const current = await repository.findById(ticketId);
+  const current = await repository.findById(ticketId, ownerId);
 
   if (!current) {
     throw appError('TICKET_NOT_FOUND',
@@ -462,7 +493,7 @@ async function cancel(id) {
     );
   }
 
-  const cancelled = await repository.cancel(ticketId);
+  const cancelled = await repository.cancel(ticketId, ownerId);
 
   if (!cancelled) {
     throw appError('TICKET_CANNOT_BE_CANCELLED',

@@ -6,6 +6,21 @@ const { getHttpStatus } = require('../src/backend/src/errors/errorHandler');
 const repository = require('../src/backend/src/repositories/ticketRepository');
 
 const originalRepository = { ...repository };
+const TEST_AUTH = Object.freeze({
+  id: '1',
+  username: 'test-staff',
+  role: 'STAFF',
+});
+const TEST_AUTH_B = Object.freeze({
+  id: '2',
+  username: 'test-staff-b',
+  role: 'STAFF',
+});
+const TEST_ADMIN = Object.freeze({
+  id: '99',
+  username: 'test-admin',
+  role: 'ADMIN',
+});
 
 function restoreRepository() {
   Object.assign(repository, originalRepository);
@@ -56,11 +71,134 @@ test('Happy path: tạo phiếu khi dữ liệu hợp lệ', async () => {
       issue_desc: 'Màn hình xuất hiện nhấp nháy khi sử dụng',
       priority: 'TRUNG_BINH',
       accessories: ['SAC', 'HOP'],
-    });
+    }, TEST_AUTH);
 
     assert.equal(result.status, 'MOI');
     assert.equal(result.ticket_code, 'BH-000999/2026');
     assert.deepEqual(result.accessories, ['SAC', 'HOP']);
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Ownership: phiếu mới lưu ID nhân viên đang đăng nhập', async () => {
+  try {
+    stubValidRepository();
+
+    let capturedInput;
+
+    repository.create = async (input) => {
+      capturedInput = input;
+
+      return {
+        ticket_id: 'TEST-2',
+        ticket_code: 'BH-000998/2026',
+        status: 'MOI',
+      };
+    };
+
+    await ticketService.create({
+      customer_id: 1,
+      device_id: 7,
+      center_id: 1,
+      category_id: 1,
+      issue_desc: 'Kiểm tra người tạo phiếu bảo hành',
+      priority: 'TRUNG_BINH',
+      accessories: [],
+    }, TEST_AUTH);
+
+    assert.equal(capturedInput.created_by, TEST_AUTH.id);
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Ownership: nhân viên B không xem được phiếu của A', async () => {
+  try {
+    repository.findById = async (id, ownerId) => {
+      assert.equal(ownerId, TEST_AUTH_B.id);
+      return null;
+    };
+
+    await assert.rejects(
+      ticketService.getById(10, TEST_AUTH_B),
+      (error) => {
+        assert.equal(error.code, 'TICKET_NOT_FOUND');
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Ownership: nhân viên B không cập nhật được phiếu của A', async () => {
+  try {
+    repository.findById = async (id, ownerId) => {
+      assert.equal(ownerId, TEST_AUTH_B.id);
+      return null;
+    };
+
+    await assert.rejects(
+      ticketService.update(10, {}, TEST_AUTH_B),
+      (error) => {
+        assert.equal(error.code, 'TICKET_NOT_FOUND');
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Ownership: nhân viên B không hủy được phiếu của A', async () => {
+  try {
+    repository.findById = async (id, ownerId) => {
+      assert.equal(ownerId, TEST_AUTH_B.id);
+      return null;
+    };
+
+    await assert.rejects(
+      ticketService.cancel(10, TEST_AUTH_B),
+      (error) => {
+        assert.equal(error.code, 'TICKET_NOT_FOUND');
+        return true;
+      }
+    );
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Ownership: nhân viên chỉ lấy danh sách phiếu của mình', async () => {
+  try {
+    let queryOptions;
+
+    repository.list = async (options) => {
+      queryOptions = options;
+      return [];
+    };
+
+    await ticketService.list({}, TEST_AUTH);
+
+    assert.equal(queryOptions.ownerId, TEST_AUTH.id);
+  } finally {
+    restoreRepository();
+  }
+});
+
+test('Authorization: ADMIN được xem tất cả phiếu', async () => {
+  try {
+    let queryOptions;
+
+    repository.list = async (options) => {
+      queryOptions = options;
+      return [];
+    };
+
+    await ticketService.list({}, TEST_ADMIN);
+
+    assert.equal(queryOptions.ownerId, null);
   } finally {
     restoreRepository();
   }
@@ -78,7 +216,7 @@ test('Boundary: chấp nhận mô tả đúng 10 ký tự', async () => {
       issue_desc: '1234567890',
       priority: 'CAO',
       accessories: [],
-    });
+    }, TEST_AUTH);
 
     assert.equal(result.issue_desc, '1234567890');
   } finally {
@@ -97,7 +235,7 @@ test('Invalid data: từ chối mô tả ngắn hơn 10 ký tự', async () => {
         issue_desc: 'Lỗi',
         priority: 'CAO',
         accessories: ['SAC'],
-      }),
+      }, TEST_AUTH),
       (error) => {
         assert.equal(error.code, 'VALIDATION_FAILED');
         assert.ok(error.fields.issue_desc);
@@ -123,7 +261,7 @@ test('Not found: từ chối khi thiết bị không tồn tại', async () => {
         issue_desc: 'Kiểm tra thiết bị không tồn tại',
         priority: 'TRUNG_BINH',
         accessories: [],
-      }),
+      }, TEST_AUTH),
       (error) => {
         assert.equal(error.code, 'RESOURCE_NOT_FOUND');
         assert.ok(error.fields.device_id);
@@ -154,7 +292,7 @@ test('Validation: từ chối khi thiết bị không thuộc khách hàng', asy
         issue_desc: 'Kiểm tra quyền sở hữu thiết bị',
         priority: 'TRUNG_BINH',
         accessories: [],
-      }),
+      }, TEST_AUTH),
       (error) => {
         assert.equal(error.code, 'VALIDATION_FAILED');
         assert.ok(error.fields.device_id);
@@ -183,7 +321,7 @@ test('Conflict: từ chối thiết bị đã có phiếu đang xử lý', async
         issue_desc: 'Kiểm tra phiếu đang xử lý của thiết bị',
         priority: 'TRUNG_BINH',
         accessories: [],
-      }),
+      }, TEST_AUTH),
       (error) => {
         assert.equal(error.code, 'ACTIVE_TICKET_EXISTS');
         assert.ok(error.fields.device_id);
@@ -214,7 +352,7 @@ test('Warranty: yêu cầu phê duyệt khi thiết bị đã hết hạn bảo 
         issue_desc: 'Kiểm tra thiết bị đã hết hạn bảo hành',
         priority: 'TRUNG_BINH',
         accessories: [],
-      }),
+      }, TEST_AUTH),
       (error) => {
         assert.equal(error.code, 'WARRANTY_APPROVAL_REQUIRED');
         assert.ok(error.fields.device_id);

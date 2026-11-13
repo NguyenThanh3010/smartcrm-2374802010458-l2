@@ -1,6 +1,6 @@
 ﻿# Nhật ký thay đổi thiết kế — Smart CRM L02
 
-- Ngày cập nhật: 19/10/2026
+- Ngày cập nhật: 13/11/2026
 - Workflow: L02 — Tiếp nhận và phân loại yêu cầu bảo hành
 - Track: SE
 - Mục đích: ghi nhận phản hồi BT1 và các quyết định kỹ thuật trong quá trình triển khai module.
@@ -10,10 +10,10 @@
 ### TD-01 — Bổ sung chú thích khóa và lực lượng quan hệ trong ERD
 
 - Phản hồi: ERD cần thể hiện rõ PK, FK và cardinality 1:N.
-- Quyết định: SỬA.
-- Lý do: giúp người đọc xác định khóa và quan hệ giữa các bảng mà không cần suy luận từ tên cột.
-- Ảnh hưởng: `docs/erd.drawio` và tài liệu mô hình dữ liệu.
-- Trạng thái: Cần cập nhật sơ đồ gốc; chưa đánh dấu hoàn thành.
+- Quyết định: CHƯA THỰC HIỆN.
+- Lý do: Ưu tiên hoàn thiện mã nguồn, kiểm thử và hồ sơ BT3 do giới hạn thời gian.
+- Ảnh hưởng: `docs/erd.drawio`; cấu trúc database hiện tại được mô tả trong `docs/ddl.sql` và các migration.
+- Trạng thái: Giữ nguyên sơ đồ ERD ban đầu, chưa cập nhật theo cấu trúc database sau BT3. Không sử dụng ERD làm nguồn xác định cấu trúc database hiện tại.
 
 ### TD-02 — Đưa SQL DDL vào tài liệu nộp
 
@@ -21,7 +21,7 @@
 - Quyết định: SỬA trong bản hồ sơ tổng hợp tiếp theo.
 - Lý do: người chấm có thể kiểm tra trực tiếp cấu trúc bảng và ràng buộc.
 - Ảnh hưởng: bản PDF hồ sơ thiết kế; nguồn DDL đang lưu tại `docs/ddl.sql`.
-- Trạng thái: DDL đã được dùng làm nguồn tạo migration; phần đưa DDL vào PDF còn chờ khi hoàn thiện hồ sơ nộp.
+- Trạng thái: DDL đã có tại docs/ddl.sql, nhưng chưa xác nhận đã đưa đầy đủ nội dung vào PDF nộp.
 
 ### TD-03 — Rà soát số lượng User Story
 
@@ -29,7 +29,7 @@
 - Quyết định: SỬA.
 - Lý do: giảm trùng lặp và làm rõ phạm vi từng yêu cầu.
 - Ảnh hưởng: `docs/srs.md`, Use Case và bảng truy vết.
-- Trạng thái: Chưa cập nhật các tài liệu thiết kế gốc.
+- Trạng thái: Chưa cập nhật các tài liệu thiết kế gốc, chưa có căn cứ xác nhận US7 và US8 đã được gộp
 
 ### TD-04 — Làm rõ NFR được tham chiếu trong UC3
 
@@ -37,7 +37,7 @@
 - Quyết định: SỬA.
 - Lý do: mỗi yêu cầu được tham chiếu phải có nội dung rõ ràng và cách kiểm chứng.
 - Ảnh hưởng: `docs/srs.md` và đặc tả UC3.
-- Trạng thái: Chưa cập nhật SRS.
+- Trạng thái: Chưa cập nhật SRS, SRS cần bổ sung NFR cụ thể về việc không mất phiếu nếu vẫn giữ yêu cầu này trong UC3
 
 ### TD-05 — Sửa bảng truy vết yêu cầu
 
@@ -45,7 +45,7 @@
 - Quyết định: SỬA.
 - Lý do: thống nhất quy ước mã yêu cầu chức năng và tránh nhầm lẫn khi truy vết.
 - Ảnh hưởng: bảng truy vết trong `docs/srs.md`.
-- Trạng thái: Chưa cập nhật SRS.
+- Trạng thái: Đã cập nhật; SRS hiện sử dụng mã FR1–FR8.
 
 ### TD-06 — Chuẩn hóa tên tệp nộp
 
@@ -60,8 +60,8 @@
 - Phản hồi: NFR cần có ngưỡng định lượng, tránh các mô tả chung chung như “an toàn” hoặc “sẵn sàng”.
 - Quyết định: SỬA.
 - Lý do: giúp kiểm chứng yêu cầu bằng tiêu chí cụ thể.
-- Ảnh hưởng: các NFR trong `docs/srs.md` và kế hoạch kiểm thử.
-- Trạng thái: Chưa rà soát và cập nhật toàn bộ NFR.
+- Ảnh hưởng: `src/backend/migrate.js` và các tệp trong `src/backend/migrations/`.
+- Trạng thái: Đã bổ sung các ngưỡng định lượng cho NFR trong SRS; NFR1 và NFR2 chưa được kiểm chứng bằng phép đo thực tế.
 
 ## B. Quyết định kỹ thuật trong quá trình triển khai module
 

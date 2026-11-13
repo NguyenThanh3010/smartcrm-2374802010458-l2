@@ -22,7 +22,10 @@ function shutdown(signal) {
       console.log('Server và database connection đã đóng.');
       process.exit(0);
     } catch (error) {
-      console.error('Lỗi khi đóng database connection:', error.message);
+      console.error('[SHUTDOWN ERROR]', {
+        name: error.name,
+        code: error.code || 'UNKNOWN',
+      });
       process.exit(1);
     }
   });

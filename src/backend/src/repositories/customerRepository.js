@@ -1,5 +1,22 @@
 ﻿const { pool } = require('../db');
 
+const {
+  encryptValue,
+  decryptValue,
+  phoneLookupHash,
+} = require('../security/customerCrypto');
+
+function decryptCustomer(customer) {
+  if (!customer) return null;
+
+  return {
+    ...customer,
+    full_name: decryptValue(customer.full_name),
+    phone: decryptValue(customer.phone),
+    address: decryptValue(customer.address),
+  };
+}
+
 async function list({ limit = 50, offset = 0 } = {}) {
   const result = await pool.query(
     `SELECT customer_id, full_name, phone, address
@@ -9,7 +26,7 @@ async function list({ limit = 50, offset = 0 } = {}) {
     [limit, offset]
   );
 
-  return result.rows;
+  return result.rows.map(decryptCustomer);
 }
 
 async function findById(id) {
@@ -20,41 +37,56 @@ async function findById(id) {
     [id]
   );
 
-  return result.rows[0] || null;
+  return decryptCustomer(result.rows[0] || null);
 }
 
 async function findByPhone(phone) {
   const result = await pool.query(
     `SELECT customer_id, full_name, phone, address
      FROM customer
-     WHERE phone = $1`,
-    [phone]
+     WHERE phone_lookup_hash = $1`,
+    [phoneLookupHash(phone)]
   );
 
-  return result.rows[0] || null;
+  return decryptCustomer(result.rows[0] || null);
 }
 
 async function create({ full_name, phone, address }) {
   const result = await pool.query(
-    `INSERT INTO customer (full_name, phone, address)
-     VALUES ($1, $2, $3)
+    `INSERT INTO customer
+       (full_name, phone, address, phone_lookup_hash)
+     VALUES ($1, $2, $3, $4)
      RETURNING customer_id, full_name, phone, address`,
-    [full_name, phone, address ?? null]
+    [
+      encryptValue(full_name),
+      encryptValue(phone),
+      encryptValue(address),
+      phoneLookupHash(phone),
+    ]
   );
 
-  return result.rows[0];
+  return decryptCustomer(result.rows[0]);
 }
 
 async function update(id, { full_name, phone, address }) {
   const result = await pool.query(
     `UPDATE customer
-     SET full_name = $1, phone = $2, address = $3
-     WHERE customer_id = $4
+     SET full_name = $1,
+         phone = $2,
+         address = $3,
+         phone_lookup_hash = $4
+     WHERE customer_id = $5
      RETURNING customer_id, full_name, phone, address`,
-    [full_name, phone, address ?? null, id]
+    [
+      encryptValue(full_name),
+      encryptValue(phone),
+      encryptValue(address),
+      phoneLookupHash(phone),
+      id,
+    ]
   );
 
-  return result.rows[0] || null;
+  return decryptCustomer(result.rows[0] || null);
 }
 
 async function remove(id) {
@@ -65,7 +97,7 @@ async function remove(id) {
     [id]
   );
 
-  return result.rows[0] || null;
+  return decryptCustomer(result.rows[0] || null);
 }
 
 module.exports = {

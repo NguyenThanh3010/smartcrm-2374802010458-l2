@@ -26,11 +26,17 @@ Authorization: Bearer <token>
 
 ### 1.2. Xác thực và quyền truy cập
 
-- `GET /` và `POST /api/auth/login` là endpoint công khai.
+- `GET /`, `GET /health` và `POST /api/auth/login` là các endpoint công khai, không yêu cầu Bearer token.
+- `POST /api/users` yêu cầu Bearer token hợp lệ và vai trò `ADMIN`. Chỉ ADMIN được phép tạo tài khoản nhân viên mới.
 - Các endpoint thuộc `/api/customers`, `/api/tickets` và `/api/lookups` yêu cầu Bearer token hợp lệ.
-- Token được cấp khi đăng nhập và có thời hạn **8 giờ**.
-- Backend hiện kiểm tra trạng thái đăng nhập, chưa triển khai phân quyền theo vai trò hoặc quyền chi tiết cho từng nhóm người dùng. Vì vậy, mọi tài khoản có token hợp lệ đều đi qua cùng middleware xác thực.
-- Nếu chưa cấu hình `AUTH_USERNAME`, `AUTH_PASSWORD` hoặc `AUTH_TOKEN_SECRET`, API xác thực trả về `503 AUTH_NOT_CONFIGURED`.
+- Hệ thống có hai vai trò `ADMIN` và `STAFF`.
+- Đối với API phiếu bảo hành:
+  - `STAFF` chỉ được xem danh sách, xem chi tiết, cập nhật và hủy các phiếu do chính tài khoản mình tạo.
+  - `ADMIN` được xem, cập nhật và hủy phiếu của tất cả nhân viên.
+  - Cả ADMIN và STAFF đều có thể tạo phiếu. Mỗi phiếu được lưu ID tài khoản tạo trong trường `created_by`.
+- Khi đăng nhập thành công, máy chủ cấp token có thời hạn 8 giờ. Token sử dụng chữ ký HMAC-SHA256 theo cấu trúc `payload.signature`.
+- Backend kiểm tra tài khoản còn hoạt động trước khi cho phép truy cập API được bảo vệ.
+- `AUTH_TOKEN_SECRET` phải được cấu hình với độ dài tối thiểu 32 byte. Nếu chưa cấu hình hợp lệ, API yêu cầu xác thực trả `503 AUTH_NOT_CONFIGURED`.
 
 ### 1.3. Cấu trúc lỗi chung
 
@@ -57,7 +63,9 @@ Một số lỗi xác thực và lỗi route không tìm thấy chỉ có `code`
 | Phương thức | Đường dẫn | Xác thực | Mục đích |
 |---|---|---|---|
 | GET | `/` | Không | Kiểm tra trạng thái và thông tin API |
+| GET | `/health` | Không | Kiểm tra tình trạng Backend và kết nối database |
 | POST | `/api/auth/login` | Không | Đăng nhập và cấp Bearer token |
+| POST | `/api/users` | ADMIN | Tạo tài khoản nhân viên STAFF |
 | GET | `/api/customers` | Có | Lấy danh sách khách hàng hoặc tra cứu theo số điện thoại |
 | GET | `/api/customers/:id` | Có | Xem chi tiết khách hàng |
 | POST | `/api/customers` | Có | Tạo khách hàng |
@@ -65,11 +73,13 @@ Một số lỗi xác thực và lỗi route không tìm thấy chỉ có `code`
 | DELETE | `/api/customers/:id` | Có | Xóa khách hàng |
 | GET | `/api/lookups/issue-categories` | Có | Lấy danh mục nhóm sự cố đang hoạt động |
 | GET | `/api/lookups/service-centers` | Có | Lấy trung tâm bảo hành đang hoạt động |
-| GET | `/api/tickets` | Có | Lấy danh sách phiếu bảo hành |
-| GET | `/api/tickets/:id` | Có | Xem chi tiết phiếu bảo hành |
-| POST | `/api/tickets` | Có | Tiếp nhận và tạo phiếu bảo hành |
-| PUT | `/api/tickets/:id` | Có | Cập nhật thông tin phiếu bảo hành |
-| DELETE | `/api/tickets/:id` | Có | Hủy phiếu bảo hành |
+| GET | `/api/tickets` | ADMIN/STAFF | Lấy danh sách phiếu theo quyền sở hữu |
+| GET | `/api/tickets/:id` | ADMIN/STAFF | Xem chi tiết phiếu theo quyền sở hữu |
+| POST | `/api/tickets` | ADMIN/STAFF | Tiếp nhận và tạo phiếu bảo hành |
+| PUT | `/api/tickets/:id` | ADMIN/STAFF | Cập nhật phiếu theo quyền sở hữu |
+| DELETE | `/api/tickets/:id` | ADMIN/STAFF | Hủy phiếu theo quyền sở hữu |
+
+**Tổng cộng: 16 endpoint.**
 
 > Backend hiện không có endpoint `GET /api/customers/:id/devices`. Việc truy vấn thiết bị của khách hàng hiện được thực hiện ở tầng repository/service nội bộ; client không thể gọi trực tiếp endpoint này.
 
@@ -117,9 +127,11 @@ Cả `username` và `password` phải là chuỗi; username không được đ�
   "data": {
     "token": "<token do máy chủ sinh>",
     "token_type": "Bearer",
-    "expires_at": "<thời điểm hết hạn do máy chủ sinh, ISO 8601>",
+    "expires_at": "<thời điểm hết hạn, ISO 8601>",
     "user": {
-      "username": "<username đã xác thực>"
+      "id": "1",
+      "username": "admin",
+      "role": "ADMIN"
     }
   }
 }
@@ -420,6 +432,8 @@ Khi lấy danh sách, `data` là một mảng các đối tượng khách hàng 
 1. **Phương thức và đường dẫn:** `GET /api/tickets`
 2. **Mô tả nghiệp vụ:** Lấy danh sách phiếu bảo hành, bao gồm thông tin liên quan đến khách hàng, thiết bị, nhóm sự cố và trung tâm.
 3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ.
+- STAFF chỉ xem danh sách phiếu do chính tài khoản mình tạo.
+- ADMIN được xem danh sách phiếu của tất cả nhân viên.
 4. **Query Parameters:**
 
 | Tham số | Bắt buộc | Quy tắc |
@@ -442,9 +456,9 @@ Khi lấy danh sách, `data` là một mảng các đối tượng khách hàng 
       "issue_desc": "Màn hình chớp nháy khi sử dụng",
       "priority": "CAO",
       "status": "MOI",
-      "received_at": "2026-10-19T07:27:21.875Z",
-      "due_date": "2026-10-22T07:27:21.875Z",
-      "accessories": ["Ốp lưng"],
+      "received_at": "<thời điểm tiếp nhận thực tế, ISO 8601>",
+      "due_date": "<hạn xử lý đang lưu trong database, ISO 8601>",
+      "accessories": ["KHAC"],
       "customer_name": "Nguyễn Minh Anh",
       "customer_phone": "090****567",
       "serial_no": "SM-MEK-0001",
@@ -474,6 +488,9 @@ Khi lấy danh sách, `data` là một mảng các đối tượng khách hàng 
 1. **Phương thức và đường dẫn:** `GET /api/tickets/:id`
 2. **Mô tả nghiệp vụ:** Lấy chi tiết một phiếu bảo hành theo mã phiếu.
 3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ.
+- STAFF chỉ xem được phiếu do chính tài khoản mình tạo.
+- ADMIN được xem phiếu của tất cả nhân viên.
+- Nếu STAFF truy cập phiếu của nhân viên khác, API trả HTTP 404 với mã lỗi TICKET_NOT_FOUND.
 4. **Path Parameter:** `id` - mã phiếu, phải là số nguyên dương.
 5. **Response thành công - `200 OK`:** Dữ liệu chi tiết có cùng cấu trúc một phần tử trong `data` của `GET /api/tickets`. Ví dụ với phiếu `L02-DEMO-001`:
 
@@ -489,9 +506,9 @@ Khi lấy danh sách, `data` là một mảng các đối tượng khách hàng 
     "issue_desc": "Màn hình chớp nháy khi sử dụng",
     "priority": "CAO",
     "status": "MOI",
-    "received_at": "2026-10-19T07:27:21.875Z",
-    "due_date": "2026-10-22T07:27:21.875Z",
-    "accessories": ["Ốp lưng"],
+    "received_at": "<thời điểm tiếp nhận thực tế, ISO 8601>",
+    "due_date": "<hạn xử lý đang lưu trong database, ISO 8601>",
+    "accessories": ["KHAC"],
     "customer_name": "Nguyễn Minh Anh",
     "customer_phone": "090****567",
     "serial_no": "SM-MEK-0001",
@@ -519,7 +536,7 @@ Khi lấy danh sách, `data` là một mảng các đối tượng khách hàng 
 
 1. **Phương thức và đường dẫn:** `POST /api/tickets`
 2. **Mô tả nghiệp vụ:** Tiếp nhận yêu cầu bảo hành và tạo phiếu mới với trạng thái ban đầu `MOI`.
-3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ.
+3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ. Cả ADMIN và STAFF đều được phép tạo phiếu. Backend tự động lưu ID tài khoản đang đăng nhập vào trường created_by; client không được tự chọn người tạo phiếu.
 4. **Request Body:**
 
 Ví dụ dùng khách hàng `1`, thiết bị `7` (`SM-MEK-0004` được seed dành cho kiểm thử tạo phiếu thành công), trung tâm `1` và nhóm sự cố `3`:
@@ -527,7 +544,7 @@ Ví dụ dùng khách hàng `1`, thiết bị `7` (`SM-MEK-0004` được seed d
 ```json
 {
   "customer_id": "1",
-  "device_id": "7",
+  "device_id": "4",
   "center_id": "1",
   "category_id": "3",
   "issue_desc": "API test tạo phiếu bảo hành hợp lệ",
@@ -580,13 +597,24 @@ Ví dụ dùng khách hàng `1`, thiết bị `7` (`SM-MEK-0004` được seed d
 - Code hiện có thông báo cần quản lý phê duyệt nhưng chưa có trường/bảng lưu việc phê duyệt; quy trình ghi nhận phê duyệt chưa được triển khai trong backend.
 - Hạn xử lý được tính theo ưu tiên: `CAO` = 1 ngày, `TRUNG_BINH` = 3 ngày, `THAP` = 5 ngày. Khi tính, code bỏ qua Chủ nhật; không thấy xử lý loại trừ ngày lễ hoặc thứ Bảy.
 - Mã phiếu được sinh theo dạng `BH-xxxxxx/năm`. Thời điểm tiếp nhận và hạn xử lý do máy chủ sinh/tính.
+- Trường created_by được Backend lấy từ tài khoản đang đăng nhập, không nhận từ Request Body.
+
 
 ### 3.13. PUT `/api/tickets/:id`
 
 1. **Phương thức và đường dẫn:** `PUT /api/tickets/:id`
+
 2. **Mô tả nghiệp vụ:** Cập nhật thông tin xử lý của phiếu bảo hành.
+
 3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ.
-4. **Path Parameter và Request Body:** `id` phải là số nguyên dương. Body là đối tượng JSON; các trường có thể gửi để cập nhật gồm:
+- STAFF chỉ được cập nhật phiếu do chính tài khoản mình tạo.
+- ADMIN được cập nhật phiếu của tất cả nhân viên.
+- Nếu STAFF truy cập phiếu của nhân viên khác, API trả HTTP 404 với mã lỗi `TICKET_NOT_FOUND`.
+
+4. **Path Parameter và Request Body:**
+
+- `id`: Số nguyên dương, là ID phiếu bảo hành.
+- Body phải là đối tượng JSON. Các trường có thể gửi để cập nhật gồm:
 
 | Trường | Bắt buộc trong body | Quy tắc khi gửi |
 |---|---|---|
@@ -594,7 +622,7 @@ Ví dụ dùng khách hàng `1`, thiết bị `7` (`SM-MEK-0004` được seed d
 | `category_id` | Không | ID số nguyên dương của nhóm sự cố đang hoạt động |
 | `issue_desc` | Không | Chuỗi từ 10 đến 2000 ký tự sau trim |
 | `priority` | Không | `CAO`, `TRUNG_BINH` hoặc `THAP` |
-| `due_date` | Không | Giá trị ngày giờ JavaScript có thể phân tích; nên gửi ISO 8601 |
+| `due_date` | Không | Giá trị ngày giờ JavaScript có thể phân tích; khuyến nghị ISO 8601 |
 | `accessories` | Không | Mảng gồm `SAC`, `TAI_NGHE`, `HOP`, `KHAC`, hoặc `null` |
 
 Ví dụ cập nhật một phần:
@@ -606,9 +634,11 @@ Ví dụ cập nhật một phần:
 }
 ```
 
-Các trường không gửi sẽ giữ giá trị hiện tại. `customer_id` và `device_id` không nằm trong danh sách trường được cập nhật.
+Các trường không gửi sẽ giữ giá trị hiện tại. Gửi `accessories: null` sẽ đặt danh sách phụ kiện thành `null`. `customer_id` và `device_id` không nằm trong danh sách trường được cập nhật.
 
-5. **Response thành công - `200 OK`:** Trả về `{ "data": <phiếu bảo hành sau cập nhật> }`; đối tượng phiếu có cấu trúc như response của `GET /api/tickets/:id`. Ví dụ phần đầu của response:
+5. **Response thành công - `200 OK`:** Trả về `{ "data": <phiếu bảo hành sau cập nhật> }`; đối tượng phiếu có cấu trúc như response của `GET /api/tickets/:id`.
+
+Ví dụ phần đầu của response:
 
 ```json
 {
@@ -624,7 +654,7 @@ Các trường không gửi sẽ giữ giá trị hiện tại. `customer_id` v�
     "status": "MOI",
     "received_at": "2026-10-19T07:27:21.875Z",
     "due_date": "2026-10-22T07:27:21.875Z",
-    "accessories": ["Ốp lưng"],
+    "accessories": ["KHAC"],
     "customer_name": "Nguyễn Minh Anh",
     "customer_phone": "090****567",
     "serial_no": "SM-MEK-0001",
@@ -637,29 +667,43 @@ Các trường không gửi sẽ giữ giá trị hiện tại. `customer_id` v�
 }
 ```
 
-Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa hai trường được cập nhật. Các trường thời gian, phụ kiện và thông tin liên quan cũng có trong response thực tế.
+Ví dụ minh họa cấu trúc response sau cập nhật. `accessories` trả về các mã phụ kiện đã lưu, không chuyển thành tên hiển thị. Số điện thoại khách hàng được che bớt.
 
 6. **Mã lỗi:**
 
 | HTTP | Code | Điều kiện |
 |---|---|---|
-| 400 | `VALIDATION_FAILED` | ID, body hoặc một trường cập nhật không hợp lệ |
+| 400 | `VALIDATION_FAILED` | ID, body hoặc một trường cập nhật không hợp lệ; trung tâm hoặc nhóm sự cố không hợp lệ/ngừng hoạt động |
+| 400 | `INVALID_JSON` | Nội dung JSON gửi lên sai cú pháp |
 | 401 | `AUTH_REQUIRED` / `AUTH_TOKEN_INVALID` | Thiếu token hoặc token không hợp lệ/hết hạn |
-| 404 | `TICKET_NOT_FOUND` | Không tìm thấy phiếu |
+| 404 | `TICKET_NOT_FOUND` | Không tìm thấy phiếu hoặc STAFF không có quyền truy cập phiếu |
+| 404 | `RESOURCE_NOT_FOUND` | Dữ liệu được tham chiếu không còn tồn tại trong cơ sở dữ liệu |
 | 409 | `TICKET_CANCELLED` | Phiếu đã ở trạng thái `HUY` |
-| 409 | `TICKET_NOT_EDITABLE` | Database không cập nhật được phiếu ở trạng thái hiện tại |
-| 409 | `DUPLICATE_VALUE` | Database phát hiện giá trị duy nhất bị trùng |
+| 409 | `TICKET_NOT_EDITABLE` | Phiếu không còn ở trạng thái cho phép cập nhật tại thời điểm ghi dữ liệu |
+| 409 | `DUPLICATE_VALUE` | Cơ sở dữ liệu phát hiện dữ liệu vi phạm ràng buộc duy nhất |
 | 503 | `AUTH_NOT_CONFIGURED` | Máy chủ chưa cấu hình xác thực |
+| 500 | `INTERNAL_SERVER_ERROR` | Lỗi nội bộ không được xử lý cụ thể |
 
-7. **Giới hạn / hành vi đặc biệt:** Không cho cập nhật phiếu đã hủy. Các trường được giữ nguyên nếu không gửi trong body. `due_date` không tự động tính lại chỉ vì `priority` thay đổi; muốn đổi hạn phải gửi `due_date` phù hợp.
+7. **Giới hạn / hành vi đặc biệt:** Không cho cập nhật phiếu đã hủy. Các trường không gửi sẽ giữ giá trị hiện tại. `due_date` không tự động tính lại chỉ vì `priority` thay đổi; muốn đổi hạn phải gửi `due_date` phù hợp. `customer_id`, `device_id` và `status` không được cập nhật qua endpoint này.
 
 ### 3.14. DELETE `/api/tickets/:id`
 
 1. **Phương thức và đường dẫn:** `DELETE /api/tickets/:id`
-2. **Mô tả nghiệp vụ:** Hủy phiếu bảo hành theo quy tắc nghiệp vụ.
+
+2. **Mô tả nghiệp vụ:** Hủy phiếu bảo hành theo quy tắc nghiệp vụ. Đây là thao tác đổi trạng thái, không xóa bản ghi khỏi database.
+
 3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ.
-4. **Path Parameter:** `id` - mã phiếu, phải là số nguyên dương. Không có Request Body.
-5. **Response thành công - `200 OK`:** Khi hủy phiếu mẫu `L02-DEMO-001`, trạng thái trong dữ liệu trả về được chuyển thành `HUY`:
+- STAFF chỉ được hủy phiếu do chính tài khoản mình tạo.
+- ADMIN được hủy phiếu của tất cả nhân viên nếu phiếu đáp ứng điều kiện nghiệp vụ.
+- Nếu STAFF truy cập phiếu của nhân viên khác, API trả HTTP 404 với mã lỗi `TICKET_NOT_FOUND`.
+
+4. **Path Parameter và Request Body:**
+- `id`: Mã phiếu bảo hành, phải là số nguyên dương.
+- Không có Request Body.
+
+5. **Response thành công - `200 OK`:** Khi hủy phiếu, trạng thái trong dữ liệu trả về được chuyển thành `HUY`.
+
+Ví dụ response sau khi hủy phiếu mẫu `L02-DEMO-001`:
 
 ```json
 {
@@ -676,7 +720,7 @@ Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa h
     "status": "HUY",
     "received_at": "2026-10-19T07:27:21.875Z",
     "due_date": "2026-10-22T07:27:21.875Z",
-    "accessories": ["Ốp lưng"],
+    "accessories": ["KHAC"],
     "customer_name": "Nguyễn Minh Anh",
     "customer_phone": "090****567",
     "serial_no": "SM-MEK-0001",
@@ -689,7 +733,7 @@ Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa h
 }
 ```
 
-Đây là response dự kiến sau khi hủy phiếu mẫu `L02-DEMO-001`; trạng thái `MOI` được đổi thành `HUY`. Gửi request với ID `1` trên database hiện tại sẽ thực sự hủy phiếu mẫu này, vì vậy chỉ dùng khi có chủ đích kiểm thử.
+Đây là ví dụ minh họa cấu trúc response. `accessories` trả về mã phụ kiện đã lưu; số điện thoại khách hàng được che bớt. Gửi request với ID `1` trên database hiện tại sẽ thực sự hủy phiếu tương ứng, vì vậy chỉ thực hiện khi có chủ đích kiểm thử.
 
 6. **Mã lỗi:**
 
@@ -697,11 +741,103 @@ Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa h
 |---|---|---|
 | 400 | `VALIDATION_FAILED` | `id` không phải số nguyên dương |
 | 401 | `AUTH_REQUIRED` / `AUTH_TOKEN_INVALID` | Thiếu token hoặc token không hợp lệ/hết hạn |
-| 404 | `TICKET_NOT_FOUND` | Không tìm thấy phiếu |
-| 409 | `TICKET_CANNOT_BE_CANCELLED` | Phiếu không ở trạng thái `MOI` hoặc không thể hủy ở trạng thái hiện tại |
+| 404 | `TICKET_NOT_FOUND` | Không tìm thấy phiếu hoặc STAFF không có quyền truy cập phiếu |
+| 409 | `TICKET_CANNOT_BE_CANCELLED` | Phiếu không ở trạng thái `MOI` hoặc không thể hủy tại thời điểm cập nhật |
+| 503 | `AUTH_NOT_CONFIGURED` | Máy chủ chưa cấu hình xác thực |
+| 500 | `INTERNAL_SERVER_ERROR` | Lỗi nội bộ không được xử lý cụ thể |
+
+7. **Giới hạn / hành vi đặc biệt:** Chỉ phiếu có trạng thái `MOI` mới được hủy. Khi hủy thành công, hệ thống cập nhật trạng thái thành `HUY` và ghi lịch sử trạng thái. Bản ghi phiếu vẫn được giữ trong database.
+
+### 3.15. GET `/health`
+
+1. **Phương thức và đường dẫn:** `GET /health`.
+
+2. **Mô tả nghiệp vụ:** Kiểm tra tình trạng hoạt động của Backend và khả năng kết nối đến PostgreSQL.
+
+3. **Xác thực và quyền truy cập:** Công khai ở cấp Backend, không yêu cầu Bearer token.
+
+4. **Tham số / Request Body:** Không có query parameter, path parameter hoặc request body.
+
+5. **Response thành công – `200 OK`:**
+
+```json
+{
+  "status": "OK",
+  "database": "connected"
+}
+```
+
+6. **Mã lỗi:**
+
+| HTTP | Code / Response | Điều kiện |
+|---|---|---|
+| 503 | `{"status":"ERROR","database":"disconnected"}` | Không thể thực hiện truy vấn kiểm tra kết nối PostgreSQL |
+
+7. **Giới hạn / hành vi đặc biệt:** Backend thực hiện truy vấn `SELECT 1` để kiểm tra kết nối database. Endpoint được Docker sử dụng làm healthcheck cho dịch vụ Backend. HTTP 200 chỉ xác nhận Backend có thể kết nối database tại thời điểm kiểm tra.
+
+### 3.16. POST `/api/users`
+
+1. **Phương thức và đường dẫn:** `POST /api/users`.
+
+2. **Mô tả nghiệp vụ:** Tạo tài khoản nhân viên mới với vai trò mặc định `STAFF`, phục vụ quản lý người dùng và phân quyền sở hữu phiếu bảo hành.
+
+3. **Xác thực và quyền truy cập:** Bắt buộc Bearer token hợp lệ và tài khoản phải có vai trò `ADMIN`. Tài khoản `STAFF` không được phép tạo tài khoản nhân viên khác.
+
+4. **Request Body:**
+
+Ví dụ tạo tài khoản nhân viên:
+
+```json
+{
+  "username": "staff_demo",
+  "password": "StaffTest@2026"
+}
+```
+
+| Trường | Bắt buộc | Kiểu / ràng buộc |
+|---|---|---|
+| `username` | Có | Chuỗi từ 3 đến 50 ký tự, chỉ gồm chữ cái tiếng Anh, chữ số, dấu chấm `.`, gạch dưới `_` hoặc gạch ngang `-`; được loại bỏ khoảng trắng đầu và cuối |
+| `password` | Có | Chuỗi có ít nhất 8 ký tự và tối đa 72 byte UTF-8 |
+
+5. **Response thành công – `201 Created`:**
+
+```json
+{
+  "data": {
+    "user_id": "2",
+    "username": "staff_demo",
+    "role": "STAFF",
+    "is_active": true,
+    "created_at": "<thời điểm tạo tài khoản, ISO 8601>"
+  }
+}
+```
+
+Các giá trị ID và thời gian được tạo bởi hệ thống. Response không trả về `password` hoặc `password_hash`.
+
+6. **Mã lỗi:**
+
+| HTTP | Code | Điều kiện |
+|---|---|---|
+| 400 | `INVALID_BODY` | Request body không phải đối tượng JSON |
+| 400 | `INVALID_USERNAME` | Username không đúng định dạng hoặc độ dài |
+| 400 | `INVALID_PASSWORD` | Mật khẩu dưới 8 ký tự hoặc vượt quá 72 byte |
+| 400 | `INVALID_JSON` | Nội dung JSON gửi lên sai cú pháp |
+| 401 | `AUTH_REQUIRED` | Thiếu Bearer token |
+| 401 | `AUTH_TOKEN_INVALID` | Token không hợp lệ, hết hạn hoặc tài khoản không còn hoạt động |
+| 403 | `ADMIN_REQUIRED` | Tài khoản đăng nhập không có vai trò ADMIN |
+| 409 | `USERNAME_EXISTS` | Tên đăng nhập đã được sử dụng |
+| 500 | `INTERNAL_SERVER_ERROR` | Lỗi nội bộ không dự kiến |
 | 503 | `AUTH_NOT_CONFIGURED` | Máy chủ chưa cấu hình xác thực |
 
-7. **Giới hạn / hành vi đặc biệt:** Chỉ phiếu có trạng thái `MOI` được hủy. Đây là hủy theo nghiệp vụ: cập nhật trạng thái thành `HUY` và ghi lịch sử trạng thái; không xóa bản ghi phiếu khỏi database.
+7. **Giới hạn / hành vi đặc biệt:**
+
+- Chỉ tài khoản ADMIN được tạo tài khoản nhân viên.
+- Vai trò của tài khoản mới luôn là `STAFF`, không được lựa chọn từ request body.
+- Mật khẩu được băm bằng `bcryptjs` với cost factor 12 trước khi lưu vào PostgreSQL.
+- Mật khẩu gốc và `password_hash` không được trả về trong response.
+- Tên đăng nhập phải duy nhất trong bảng `app_user`.
+- Không có chức năng tự đăng ký tài khoản công khai.
 
 ## 4. Quy tắc validation tổng hợp
 
@@ -737,19 +873,23 @@ Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa h
 |---|---|---|
 | 400 | `AUTH_VALIDATION_FAILED` | Thông tin đăng nhập thiếu hoặc sai kiểu dữ liệu |
 | 400 | `INVALID_JSON` | JSON gửi lên sai cú pháp |
-| 400 | `INVALID_ID` | ID khách hàng không phải số nguyên dương |
+| 400 | `INVALID_ID` | ID tài nguyên không phải số nguyên dương |
 | 400 | `INVALID_BODY` | Body không đúng dạng đối tượng JSON |
 | 400 | `INVALID_PAGINATION` | Tham số phân trang khách hàng không hợp lệ |
+| 400 | `INVALID_USERNAME` | Tên đăng nhập không đúng định dạng hoặc độ dài |
+| 400 | `INVALID_PASSWORD` | Mật khẩu không đáp ứng độ dài cho phép |
 | 400 | `VALIDATION_FAILED` | Dữ liệu phiếu hoặc phân trang phiếu không hợp lệ |
 | 401 | `AUTH_REQUIRED` | Thiếu Bearer token |
-| 401 | `AUTH_TOKEN_INVALID` | Token không hợp lệ hoặc đã hết hạn |
+| 401 | `AUTH_TOKEN_INVALID` | Token không hợp lệ, hết hạn hoặc tài khoản không còn hoạt động |
 | 401 | `AUTH_INVALID_CREDENTIALS` | Tên đăng nhập hoặc mật khẩu không chính xác |
+| 403 | `ADMIN_REQUIRED` | Tài khoản đăng nhập không có quyền ADMIN |
 | 404 | `CUSTOMER_NOT_FOUND` | Không tìm thấy khách hàng |
 | 404 | `TICKET_NOT_FOUND` | Không tìm thấy phiếu bảo hành |
 | 404 | `RESOURCE_NOT_FOUND` | Không tìm thấy khách hàng, thiết bị hoặc dữ liệu tham chiếu |
 | 404 | `ROUTE_NOT_FOUND` | Không tìm thấy endpoint |
 | 409 | `PHONE_EXISTS` | Số điện thoại đã tồn tại |
 | 409 | `DUPLICATE_VALUE` | Giá trị bị trùng theo ràng buộc database |
+| 409 | `USERNAME_EXISTS` | Tên đăng nhập đã được sử dụng |
 | 409 | `RELATED_RECORD_EXISTS` | Không thể xóa khách hàng vì còn dữ liệu liên quan |
 | 409 | `ACTIVE_TICKET_EXISTS` | Thiết bị đã có phiếu bảo hành chưa đóng |
 | 409 | `TICKET_CANCELLED` | Phiếu đã hủy, không thể cập nhật |
@@ -759,8 +899,8 @@ Ví dụ giữ nguyên các trường khác của phiếu mẫu và minh họa h
 | 422 | `INVALID_PHONE` | Số điện thoại không hợp lệ |
 | 422 | `INVALID_ADDRESS` | Địa chỉ không hợp lệ |
 | 422 | `WARRANTY_APPROVAL_REQUIRED` | Thiết bị đã hết hạn bảo hành và cần phê duyệt |
-| 503 | `AUTH_NOT_CONFIGURED` | Máy chủ chưa cấu hình xác thực |
 | 500 | `INTERNAL_SERVER_ERROR` | Lỗi nội bộ không dự kiến |
+| 503 | `AUTH_NOT_CONFIGURED` | Máy chủ chưa cấu hình xác thực |
 
 ## 6. Dữ liệu mẫu tham chiếu
 
@@ -771,7 +911,7 @@ Các dữ liệu dưới đây được lấy từ `src/backend/seeds/001_demo_d
 | customer_id | Khách hàng | Số điện thoại | device_id | Serial |
 |---|---|---|---|---|
 | `1` | Nguyễn Minh Anh | `0901234567` | `1` | `SM-MEK-0001` |
-| `1` | Nguyễn Minh Anh | `0901234567` | `7` | `SM-MEK-0004` |
+| `1` | Nguyễn Minh Anh | `0901234567` | `4` | `SM-MEK-0004` |
 | `2` | Trần Quốc Bảo | `0912345678` | `2` | `SM-MEK-0002` |
 | `3` | Lê Thu Hà | `0987654321` | `3` | `SM-MEK-0003` |
 
@@ -802,3 +942,5 @@ Thiết bị `SM-MEK-0004` được seed dành cho kiểm thử tạo phiếu th
 | `1` | `L02-DEMO-001` | `1` | `1` | `MOI` | `CAO` |
 | `2` | `L02-DEMO-002` | `2` | `2` | `DANG_XU_LY` | `TRUNG_BINH` |
 | `3` | `L02-DEMO-003` | `3` | `3` | `CHO_LINH_KIEN` | `THAP` |
+
+**Lưu ý:** Các giá trị `due_date` của phiếu mẫu được thiết lập trực tiếp trong file Seed bằng các khoảng thời gian minh họa so với `CURRENT_TIMESTAMP` (+3, +5 và +7 ngày). Đây không phải kết quả tính hạn cam kết bằng hàm `calculateDueDate`. Quy tắc SLA 1, 3 và 5 ngày, bỏ qua Chủ nhật, được áp dụng khi Backend tạo phiếu bảo hành mới.

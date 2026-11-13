@@ -1,0 +1,17 @@
+FROM node:24-alpine
+
+WORKDIR /app/src/backend
+
+COPY src/backend/package.json src/backend/package-lock.json ./
+
+RUN npm ci
+
+COPY src/backend/ ./
+
+COPY tests/ /app/tests/
+
+ENV NODE_ENV=test
+
+USER node
+
+CMD ["npm", "test"]

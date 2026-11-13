@@ -57,7 +57,12 @@ async function main() {
         console.log(`Thành công: ${file}`);
       } catch (error) {
         await client.query('ROLLBACK');
-        throw new Error(`${file}: ${error.message}`);
+
+        const migrationError = new Error(`Migration thất bại: ${file}`);
+        migrationError.code = error.code || 'UNKNOWN';
+        migrationError.migration = file;
+
+        throw migrationError;
       }
     }
 
@@ -69,7 +74,10 @@ async function main() {
 
 main()
   .catch(error => {
-    console.error('Migration thất bại:', error.message);
+    console.error('[MIGRATION ERROR]', {
+      migration: error.migration || 'UNKNOWN',
+      code: error.code || 'UNKNOWN',
+    });
     process.exitCode = 1;
   })
   .finally(() => pool.end());

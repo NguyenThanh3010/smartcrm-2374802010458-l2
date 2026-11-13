@@ -1,8 +1,10 @@
 ﻿const { pool } = require('../db');
+const { decryptValue } = require('../security/customerCrypto');
 
 const SELECT_TICKET = `
   SELECT
     t.ticket_id,
+    t.created_by,
     t.ticket_code,
     t.customer_id,
     t.device_id,
@@ -29,22 +31,62 @@ const SELECT_TICKET = `
   JOIN service_center sc ON sc.center_id = t.center_id
 `;
 
-async function list({ limit = 50, offset = 0 } = {}) {
-  const result = await pool.query(
-    `${SELECT_TICKET}
-     ORDER BY t.received_at DESC, t.ticket_id DESC
-     LIMIT $1 OFFSET $2`,
-    [limit, offset]
-  );
-  return result.rows;
+function decryptTicketCustomer(ticket) {
+  if (!ticket) return null;
+
+  return {
+    ...ticket,
+    customer_name: decryptValue(ticket.customer_name),
+    customer_phone: decryptValue(ticket.customer_phone),
+  };
 }
 
-async function findById(id) {
+function decryptCustomer(customer) {
+  if (!customer) return null;
+
+  return {
+    ...customer,
+    full_name: decryptValue(customer.full_name),
+    phone: decryptValue(customer.phone),
+  };
+}
+
+async function list({ limit = 50, offset = 0, ownerId = null } = {}) {
+  const ownerFilter = ownerId === null
+    ? ''
+    : 'WHERE t.created_by = $3';
+
+  const values = ownerId === null
+    ? [limit, offset]
+    : [limit, offset, ownerId];
+
   const result = await pool.query(
-    `${SELECT_TICKET} WHERE t.ticket_id = $1`,
-    [id]
+    `${SELECT_TICKET}
+    ${ownerFilter}
+    ORDER BY t.received_at DESC, t.ticket_id DESC
+    LIMIT $1 OFFSET $2`,
+    values
   );
-  return result.rows[0] || null;
+
+  return result.rows.map(decryptTicketCustomer);
+}
+
+async function findById(id, ownerId = null) {
+  const ownerFilter = ownerId === null
+    ? ''
+    : 'AND t.created_by = $2';
+
+  const values = ownerId === null
+    ? [id]
+    : [id, ownerId];
+
+  const result = await pool.query(
+    `${SELECT_TICKET}
+     WHERE t.ticket_id = $1 ${ownerFilter}`,
+    values
+  );
+
+  return decryptTicketCustomer(result.rows[0] || null);
 }
 
 async function findByCode(ticketCode) {
@@ -62,7 +104,7 @@ async function findCustomer(id) {
      FROM customer WHERE customer_id = $1`,
     [id]
   );
-  return result.rows[0] || null;
+  return decryptCustomer(result.rows[0] || null);
 }
 
 async function findDevice(id) {
@@ -116,6 +158,7 @@ async function findOpenByDevice(deviceId) {
 }
 
 async function create({
+  created_by,
   customer_id,
   device_id,
   center_id,
@@ -174,16 +217,18 @@ async function create({
 
     const inserted = await client.query(
       `INSERT INTO ticket (
-         ticket_code, customer_id, device_id, center_id, category_id,
-         issue_desc, priority, status, received_at, due_date, accessories
-       )
-       VALUES (
-         $1, $2, $3, $4, $5, $6, $7, 'MOI',
-         $8, $9, $10::JSONB
-       )
+          ticket_code, created_by, customer_id, device_id,
+          center_id, category_id, issue_desc, priority,
+          status, received_at, due_date, accessories
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, 'MOI',
+          $9, $10, $11::JSONB
+        )
        RETURNING ticket_id`,
       [
         ticketCode,
+        created_by,
         customer_id,
         device_id,
         center_id,
@@ -211,7 +256,7 @@ async function create({
     );
 
     await client.query('COMMIT');
-    return created.rows[0];
+    return decryptTicketCustomer(created.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -227,9 +272,27 @@ async function update(id, {
   priority,
   due_date,
   accessories,
-}) {
+}, ownerId = null) {
   const accessoriesJson =
     accessories == null ? null : JSON.stringify(accessories);
+
+  const ownerFilter = ownerId === null
+    ? ''
+    : 'AND created_by = $8';
+
+  const values = [
+    center_id,
+    category_id,
+    issue_desc,
+    priority,
+    due_date,
+    accessoriesJson,
+    id,
+  ];
+
+  if (ownerId !== null) {
+    values.push(ownerId);
+  }
 
   const result = await pool.query(
     `UPDATE ticket
@@ -239,25 +302,28 @@ async function update(id, {
          priority = $4,
          due_date = $5,
          accessories = $6::JSONB
-     WHERE ticket_id = $7 AND status <> 'HUY'
+     WHERE ticket_id = $7
+       AND status <> 'HUY'
+       ${ownerFilter}
      RETURNING ticket_id`,
-    [
-      center_id,
-      category_id,
-      issue_desc,
-      priority,
-      due_date,
-      accessoriesJson,
-      id,
-    ]
+    values
   );
 
   if (result.rowCount === 0) return null;
-  return findById(result.rows[0].ticket_id);
+
+  return findById(result.rows[0].ticket_id, ownerId);
 }
 
-async function cancel(id) {
+async function cancel(id, ownerId = null) {
   const client = await pool.connect();
+
+  const ownerFilter = ownerId === null
+    ? ''
+    : 'AND created_by = $2';
+
+  const values = ownerId === null
+    ? [id]
+    : [id, ownerId];
 
   try {
     await client.query('BEGIN');
@@ -265,9 +331,11 @@ async function cancel(id) {
     const result = await client.query(
       `UPDATE ticket
        SET status = 'HUY'
-       WHERE ticket_id = $1 AND status = 'MOI'
+       WHERE ticket_id = $1
+         AND status = 'MOI'
+         ${ownerFilter}
        RETURNING ticket_id`,
-      [id]
+      values
     );
 
     if (result.rowCount === 0) {
@@ -285,12 +353,14 @@ async function cancel(id) {
     );
 
     const cancelled = await client.query(
-      `${SELECT_TICKET} WHERE t.ticket_id = $1`,
-      [ticketId]
+      `${SELECT_TICKET}
+       WHERE t.ticket_id = $1
+       ${ownerId === null ? '' : 'AND t.created_by = $2'}`,
+      values
     );
 
     await client.query('COMMIT');
-    return cancelled.rows[0];
+    return decryptTicketCustomer(cancelled.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

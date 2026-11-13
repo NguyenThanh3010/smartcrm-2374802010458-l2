@@ -1,83 +1,74 @@
 # TEST PLAN – SMART CRM – MEKONG MOBILE
+
 **Luồng nghiệp vụ:** L02 – Tiếp nhận và phân loại yêu cầu bảo hành  
 **Track:** SE
 
 ## 1. Phạm vi kiểm thử
 
-Kiểm thử tập trung vào module tiếp nhận và phân loại phiếu bảo hành, bao gồm các nội dung:
+Kiểm thử tập trung vào module tiếp nhận và phân loại phiếu bảo hành, bao gồm:
 
-- Kiểm tra dữ liệu đầu vào khi tạo phiếu: khách hàng, thiết bị, trung tâm bảo hành, nhóm sự cố, mô tả lỗi, mức ưu tiên và phụ kiện.
-- Kiểm tra quan hệ giữa khách hàng và thiết bị; ngăn chặn tạo phiếu mới khi thiết bị đã có phiếu chưa đóng.
-- Kiểm tra điều kiện bảo hành dựa trên ngày mua và thời hạn bảo hành; xác định các trường hợp cần quản lý phê duyệt.
-- Kiểm tra tính toán hạn cam kết theo ba mức ưu tiên và quy tắc bỏ qua Chủ nhật.
-- Kiểm tra tính duy nhất và định dạng chuẩn của số điện thoại khách hàng.
-- Kiểm tra việc tạo phiếu, sinh mã phiếu, lưu trạng thái ban đầu và lịch sử trạng thái.
-- Kiểm tra phản hồi API, xác thực Bearer token và xử lý dữ liệu không hợp lệ.
+- Kiểm tra dữ liệu đầu vào khi tạo phiếu, quan hệ giữa khách hàng và thiết bị, và ngăn tạo phiếu mới khi thiết bị đã có phiếu chưa đóng.
+- Kiểm tra điều kiện bảo hành, tính hạn cam kết theo mức ưu tiên và quy tắc bỏ qua Chủ nhật.
+- Kiểm tra định dạng, tính duy nhất của số điện thoại và việc lưu trữ dữ liệu khách hàng.
+- Kiểm tra tạo phiếu, sinh mã phiếu, trạng thái ban đầu và lịch sử trạng thái.
+- Kiểm tra API, xác thực Bearer token, phân quyền ADMIN/STAFF và quyền sở hữu phiếu bảo hành. STAFF chỉ được truy cập phiếu do mình tạo; ADMIN được quản lý phiếu trên toàn hệ thống.
+- Kiểm tra bảo vệ thông tin: mật khẩu được băm, dữ liệu khách hàng được mã hóa và xử lý lỗi an toàn.
 
-**Phạm vi chủ ý không kiểm thử:** Kiểm thử hiệu năng và tải với số lượng bản ghi lớn; kiểm thử chấp nhận người dùng (UAT) chưa được thực hiện trong phạm vi BT3. Việc kiểm thử phân quyền và giới hạn dữ liệu giữa nhiều tài khoản cũng chưa được thực hiện đầy đủ.
+**Phạm vi chưa thực hiện đầy đủ:** Kiểm thử hiệu năng và tải với số lượng bản ghi lớn; kiểm thử chấp nhận người dùng (UAT) và kiểm thử bảo mật chuyên sâu.
 
 ## 2. Loại kiểm thử và số lượng
 
-Bộ kiểm thử tự động gồm 16 bài kiểm thử (test functions), được tổng hợp thành 12 test case trong `docs/test-report.md`.
+Bộ kiểm thử tự động gồm 29 bài kiểm thử (test functions), được tổng hợp thành 12 test case trong `docs/test-report.md`.
 
 | Tầng kiểm thử | Số lượng | Nội dung |
 |---|---:|---|
-| Unit Test | 11 | Kiểm tra logic tạo phiếu, dữ liệu biên, dữ liệu sai, quan hệ thiết bị, điều kiện bảo hành, tính hạn cam kết và ánh xạ mã lỗi HTTP |
-| Integration Test | 2 | Kiểm tra lưu và truy vấn dữ liệu khách hàng trên PostgreSQL; kiểm tra ràng buộc duy nhất của số điện thoại |
-| API / System Test | 3 | Kiểm tra API tạo phiếu hợp lệ, phản hồi khi dữ liệu không hợp lệ và cơ chế xác thực Bearer token |
+| Unit Test | 17 | Kiểm tra logic nghiệp vụ, dữ liệu hợp lệ, dữ liệu biên, dữ liệu sai và xử lý lỗi |
+| Integration Test | 2 | Kiểm tra lưu trữ, truy vấn và ràng buộc dữ liệu trên PostgreSQL |
+| API / System Test | 5 | Kiểm tra API, xác thực, phản hồi lỗi và quyền truy cập |
+| Crypto Test | 5 | Kiểm tra mã hóa, giải mã và bảo vệ dữ liệu nhạy cảm |
+| **Tổng cộng** | **29** | |
 
-Các test case được xây dựng từ tiêu chí chấp nhận, luồng ngoại lệ, quy tắc nghiệp vụ và các lỗi đã phát hiện trong quá trình phát triển.
+Ngoài kiểm thử tự động, dự án có kiểm tra khả năng chạy lại Migration và Seed, đồng thời thực hiện các kiểm tra bảo mật bổ sung. Các nội dung về quyền sở hữu dữ liệu, mật khẩu băm, mã hóa dữ liệu khách hàng và xử lý lỗi được ghi nhận trong `docs/security-test.md`.
 
-Kỹ thuật lựa chọn dữ liệu bao gồm phân vùng tương đương và kiểm thử giá trị biên, tập trung vào giới hạn độ dài mô tả lỗi từ 10 đến 2.000 ký tự, dữ liệu tham chiếu không hợp lệ và các trường hợp hết hạn bảo hành.
-
-Bên cạnh 16 bài kiểm thử tự động, đã kiểm tra thủ công khả năng chạy lại Migration và Seed trên database smartcrm_test.
-
-Ngoài 16 bài kiểm thử tự động, dự án đã thực hiện một số kiểm tra bảo mật thủ công bằng PowerShell và curl.exe. Các nội dung đã kiểm tra gồm OWASP A02 (Security Misconfiguration), A05 (Injection) và A07 (Authentication Failures). OWASP A01 (Broken Access Control) chưa được kiểm thử đầy đủ do phiên bản hiện tại chủ yếu sử dụng một tài khoản demo, chưa có đầy đủ cơ chế phân quyền và sở hữu dữ liệu theo người dùng. OWASP A04 (Cryptographic Failures) mới kiểm tra cấu hình AUTH_TOKEN_SECRET; chưa kiểm tra được việc lưu trữ mật khẩu dạng băm trong cơ sở dữ liệu do phiên bản hiện tại chưa có bảng tài khoản lưu mật khẩu. Do đó, không kết luận cả 5 nhóm OWASP đều đã kiểm thử thành công. Chi tiết kết quả được ghi nhận trong `docs/security-test.md`; ảnh minh chứng được lưu trong `docs/screenshots/`.
+Kỹ thuật lựa chọn dữ liệu bao gồm phân vùng tương đương và kiểm thử giá trị biên, tập trung vào độ dài mô tả lỗi từ 10 đến 2.000 ký tự, dữ liệu tham chiếu không hợp lệ, điều kiện bảo hành và quyền truy cập dữ liệu.
 
 ## 3. Tiêu chí thành công
 
-- Hoàn thành 16 bài kiểm thử tự động (test functions), gồm 11 Unit Test, 2 Integration Test và 3 API / System Test; được tổng hợp và ánh xạ vào 12 test case trong Test Report.
-- Bộ kiểm thử tự động chạy thành công bằng một lệnh thống nhất `npm test`, không có test case thất bại.
-- Kiểm tra các luồng chính, dữ liệu hợp lệ, dữ liệu không hợp lệ, giá trị biên, quan hệ dữ liệu, điều kiện bảo hành và xác thực người dùng.
-- Có kiểm thử giá trị biên đối với giới hạn tối thiểu của mô tả sự cố: chấp nhận đúng 10 ký tự và từ chối dữ liệu dưới 10 ký tự.
-- Migration và Seed có thể chạy lại trên database kiểm thử mà không tạo bảng hoặc bản ghi trùng lặp.
-- Kết quả kiểm thử được ghi nhận cụ thể và có ảnh chụp minh chứng cho từng test case; ảnh được lưu trong `docs/screenshots/`.
-- Các lỗi Critical được xử lý trước khi hoàn tất kiểm thử; các lỗi Major được sửa hoặc có hướng xử lý rõ ràng.
-- Các kiểm tra bảo mật thủ công trong phạm vi đã thực hiện có kết quả phù hợp; các nội dung chưa kiểm thử đầy đủ được ghi nhận rõ ràng.
+- 29/29 bài kiểm thử tự động chạy thành công, không có bài kiểm thử thất bại.
+- Các luồng nghiệp vụ chính, dữ liệu hợp lệ, dữ liệu không hợp lệ và giá trị biên được kiểm tra.
+- API kiểm tra đúng xác thực và quyền truy cập; người dùng không được truy cập dữ liệu ngoài quyền sở hữu được cấp.
+- Mật khẩu không được lưu dưới dạng văn bản thuần; dữ liệu khách hàng nhạy cảm được mã hóa theo cơ chế của hệ thống.
+- Migration và Seed có thể chạy lại mà không phát sinh lỗi hoặc bản ghi trùng lặp.
+- Kết quả kiểm thử được ghi nhận trong `docs/test-report.md` và các kiểm tra bảo mật được ghi nhận trong `docs/security-test.md`.
+- Các lỗi nghiêm trọng được xử lý trước khi hoàn tất kiểm thử; các lỗi còn lại phải được ghi nhận trong Bug Log.
 
-### Kết quả kiểm thử hiện tại
-
-| Hạng mục | Kết quả |
-|---|---|
-| Unit Test | 11/11 PASS |
-| Integration Test | 2/2 PASS |
-| API / System Test | 3/3 PASS |
-| Tổng kiểm thử tự động | 16/16 PASS |
-| Migration và Seed | PASS |
-| Kiểm tra bảo mật thủ công | Đã kiểm tra A02, A05, A07; A01 chưa kiểm thử đầy đủ; A04 mới kiểm tra một phần |
-
-Kết quả kiểm thử bảo mật chỉ phản ánh các trường hợp đã thực hiện, không thay thế đánh giá bảo mật chuyên sâu hoặc kiểm thử xâm nhập.
 ## 4. Môi trường và dữ liệu thử
 
-**Môi trường:** Windows 11, Node.js 24.14.0, npm 11.9.0 và PostgreSQL 18.4. Kiểm thử Backend sử dụng Node.js built-in test runner (`node:test`).
+**Môi trường:** Windows 11 và Docker Compose. Bộ kiểm thử chạy trong container Node.js 24, sử dụng PostgreSQL 18.4.
 
-**Database kiểm thử:** Sử dụng database riêng `smartcrm_test`, không sử dụng database chính `smartcrm`. Cấu trúc database được khởi tạo bằng migration `001_init.sql` và dữ liệu mẫu được nạp bằng `001_demo_data.sql`.
+**Database kiểm thử:** Sử dụng database riêng `smartcrm_test` thông qua dịch vụ `test-db` trong Docker Compose, tách biệt với database chính của ứng dụng.
 
-**Dữ liệu thử:** Sử dụng dữ liệu giả lập gồm khách hàng, thiết bị, nhóm sự cố, trung tâm bảo hành và phiếu bảo hành với các trạng thái khác nhau. Integration Test tạo khách hàng thử nghiệm với số điện thoại ngẫu nhiên và xóa dữ liệu sau khi kiểm tra. API Test tạo phiếu thử nghiệm và xóa phiếu cùng lịch sử trạng thái sau khi kiểm tra.
+**Dữ liệu thử:** Sử dụng dữ liệu giả lập gồm khách hàng, thiết bị, nhóm sự cố, trung tâm bảo hành và phiếu bảo hành. Các bài kiểm thử có thao tác ghi dữ liệu sử dụng môi trường kiểm thử riêng.
 
 **Cách thực hiện:**
-- Unit Test sử dụng repository giả để kiểm tra logic nghiệp vụ độc lập với PostgreSQL.
-- Integration Test kiểm tra thao tác lưu, truy vấn và ràng buộc dữ liệu trên PostgreSQL thực tế.
-- API / System Test khởi chạy Express server trên cổng ngẫu nhiên, gửi HTTP request và kiểm tra phản hồi của API.
-- Migration và Seed được chạy lại trên database kiểm thử để kiểm tra khả năng tái lập và chống tạo dữ liệu trùng.
+- Unit Test kiểm tra logic nghiệp vụ độc lập với database.
+- Integration Test kiểm tra thao tác lưu và truy vấn trên PostgreSQL.
+- API / System Test kiểm tra request, response, xác thực và quyền truy cập.
+- Crypto Test kiểm tra cơ chế mã hóa và giải mã dữ liệu.
+- Migration và Seed được chạy lại để kiểm tra khả năng tái lập.
 
-Kết quả kiểm thử và ảnh chụp minh chứng được lưu trong `docs/screenshots/`.
+**Lệnh chạy bộ kiểm thử:** Thực hiện tại thư mục gốc dự án bằng terminal có Docker Compose.
 
-**Lệnh chạy bộ kiểm thử:** Thực hiện tại thư mục `src/backend` bằng PowerShell:
+Build image kiểm thử:
 
-```powershell
-$env:DB_NAME = "smartcrm_test"
-npm test
+```bash
+docker compose --profile test build test
 ```
 
-**Tài liệu bảo mật:** Kết quả kiểm tra bảo mật thủ công được ghi trong `docs/security-test.md`. Ảnh minh chứng cho các trường hợp đã kiểm tra thuộc A02, A05 và A07 được lưu trong `docs/screenshots/`. A01 và A04 được ghi nhận là những nội dung chưa kiểm thử đầy đủ.
+Chạy bộ kiểm thử:
+
+```bash
+docker compose --profile test run --rm test
+```
+
+**Tài liệu liên quan:** Kết quả chi tiết được trình bày trong `docs/test-report.md`; kết quả kiểm tra bảo mật được ghi trong `docs/security-test.md`.

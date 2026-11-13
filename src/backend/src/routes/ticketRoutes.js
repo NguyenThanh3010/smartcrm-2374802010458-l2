@@ -27,7 +27,7 @@ router.get(
     const tickets = await service.list({
       limit: req.query.limit === undefined ? 50 : req.query.limit,
       offset: req.query.offset === undefined ? 0 : req.query.offset,
-    });
+    }, req.auth);
 
     res.json({ data: tickets.map(presentTicket) });
   })
@@ -37,7 +37,7 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const ticket = await service.getById(req.params.id);
+    const ticket = await service.getById(req.params.id, req.auth);
     res.json({ data: presentTicket(ticket) });
   })
 );
@@ -46,7 +46,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const ticket = await service.create(req.body);
+    const ticket = await service.create(req.body, req.auth);
 
     res.status(201).json({
       ticket_id: ticket.ticket_id,
@@ -63,7 +63,11 @@ router.post(
 router.put(
   '/:id',
   asyncHandler(async (req, res) => {
-    const ticket = await service.update(req.params.id, req.body);
+    const ticket = await service.update(
+      req.params.id,
+      req.body,
+      req.auth
+    );
     res.json({ data: presentTicket(ticket) });
   })
 );
@@ -73,7 +77,7 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const ticket = await service.cancel(req.params.id);
+    const ticket = await service.cancel(req.params.id, req.auth);
     res.json({
       message: 'Hủy phiếu bảo hành thành công.',
       data: presentTicket(ticket),

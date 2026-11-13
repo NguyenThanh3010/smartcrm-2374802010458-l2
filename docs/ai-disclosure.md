@@ -4,41 +4,52 @@
 - **Luồng nghiệp vụ:** L02 – Tiếp nhận và phân loại yêu cầu bảo hành
 - **Sinh viên:** Nguyễn Quốc Thành
 - **MSSV:** 2374802010458
-**Track:** SE
+- **Track:** SE
 
 ## 1. Công cụ AI được sử dụng
 
-| Công cụ | Mục đích sử dụng |
-|---|---|
-| ChatGPT (OpenAI) | Hỗ trợ đọc hiểu yêu cầu BT2, phân tích nghiệp vụ và xác định các tiêu chí cần triển khai. |
-| ChatGPT (OpenAI) | Hỗ trợ đề xuất cấu trúc Backend theo các lớp Routes, Services và Repositories; hỗ trợ xây dựng và rà soát API. |
-| ChatGPT (OpenAI) | Hỗ trợ triển khai giao diện React, API Client, xác thực Bearer token và xử lý các trạng thái giao diện. |
-| ChatGPT (OpenAI) | Hỗ trợ phân tích lỗi, đề xuất cách khắc phục và xây dựng các trường hợp kiểm thử. |
-| ChatGPT (OpenAI) | Hỗ trợ rà soát README, Bug Log và tài liệu khai báo sử dụng AI. |
+| Công cụ | Mục đích sử dụng | File / chức năng có AI hỗ trợ | Cách kiểm chứng |
+|---|---|---|---|
+| ChatGPT (OpenAI) | Hỗ trợ phân tích yêu cầu, nghiệp vụ và cấu trúc hệ thống. | `docs/srs.md`, `docs/api-contract.md`, cấu trúc Routes, Services và Repositories. | Đối chiếu với yêu cầu học phần, mã nguồn và các API thực tế. |
+| ChatGPT (OpenAI) | Hỗ trợ phân tích, đề xuất và rà soát chức năng Backend, xác thực và phân quyền. | `src/backend/src/app.js`, `src/backend/src/auth/`, `src/backend/src/routes/`, `src/backend/src/services/`, `src/backend/src/repositories/`, chức năng quản lý tài khoản và quyền sở hữu phiếu. | Kiểm tra đăng nhập, Bearer token, quyền ADMIN/STAFF và quyền sở hữu phiếu; chạy Unit Test và API Test. |
+| ChatGPT (OpenAI) | Hỗ trợ phân tích lỗi và đề xuất cách khắc phục các vấn đề trong quá trình phát triển. | `TicketCreateForm.jsx`, `ticketService.js`, `ticketRepository.js`, các lỗi BUG-01 đến BUG-04. | Thực hiện lại các tình huống tái lập lỗi; kiểm tra giao diện, API và kết quả kiểm thử sau khi sửa. |
+| ChatGPT (OpenAI) | Hỗ trợ giải thích và rà soát cơ chế bảo mật, mã hóa và bảo vệ dữ liệu. | `customerCrypto.js`, `bootstrapAdmin.js`, `encryptCustomerData.js`, các migration liên quan và chức năng xử lý dữ liệu khách hàng. | Kiểm tra dữ liệu trong PostgreSQL, xác nhận bcrypt, AES-256-GCM, HMAC-SHA256 và chạy Crypto Test. |
+| ChatGPT (OpenAI) | Hỗ trợ xây dựng, rà soát test case, kết quả kiểm thử và tài liệu bảo mật. | `tests/ticket-service.test.js`, `tests/api-system.test.js`, `tests/customer-crypto.test.js`, `tests/customer-repository.integration.test.js`, `docs/test-plan.md`, `docs/test-report.md`, `docs/security-test.md`. | Chạy bộ kiểm thử tự động, kiểm tra kết quả PASS/FAIL và thực hiện các tình huống bảo mật thủ công. |
+| ChatGPT (OpenAI) | Hỗ trợ phân tích Migration, Seed và chuẩn hóa cấu trúc, dữ liệu database. | `docs/ddl.sql`, `src/backend/migrate.js`, `src/backend/migrations/001_init.sql` đến `004_normalize_ticket_accessories.sql`, `src/backend/seeds/001_demo_data.sql`, `src/backend/seed.js`. | Kiểm tra cấu trúc PostgreSQL, dữ liệu trước và sau migration; chạy lại Migration và Seed trên database chính và database kiểm thử. |
+| ChatGPT (OpenAI) | Hỗ trợ rà soát cấu hình Docker và quy trình triển khai. | `docker-compose.yml`, các Dockerfile, `.dockerignore`, `.env.example`, `docs/deployment-guide.md`. | Kiểm tra cấu hình Docker Compose, build image, kiểm tra healthcheck, đăng nhập và chạy ứng dụng thực tế. |
+| ChatGPT (OpenAI) | Hỗ trợ biên soạn và rà soát tài liệu kỹ thuật, báo cáo và khai báo AI. | `docs/api-contract.md`, `docs/bug-log.md`, `docs/test-report.md`, `docs/deployment-guide.md`, `docs/ai-disclosure.md`, `README.md`, `docs/ddl.sql`, `docs/thay-doi-thiet-ke.md`, `docs/checklist-bao-mat.md` | Đối chiếu tài liệu với mã nguồn, log chạy thực tế, kết quả kiểm thử và các bằng chứng đã lưu. |
 
-## 2. Các nội dung có AI hỗ trợ
+## 2. Các nội dung có AI hỗ trợ trong Giai đoạn 3
 
-- Phân tích tài liệu yêu cầu và đối chiếu phạm vi triển khai với tiêu chí BT2.
-- Đề xuất và rà soát cấu trúc mã nguồn Backend, Frontend.
-- Hỗ trợ viết và điều chỉnh các đoạn mã JavaScript, SQL và PowerShell.
-- Hỗ trợ xử lý lỗi validation trên biểu mẫu và quy tắc tính hạn cam kết theo mức ưu tiên.
-- Hỗ trợ bổ sung unit test cho nghiệp vụ tạo phiếu và tính SLA.
-- Hỗ trợ rà soát cấu hình môi trường, hướng dẫn chạy dự án và nội dung tài liệu.
+- Hỗ trợ đọc hiểu yêu cầu kiểm thử và rà soát Test Plan, Test Report.
+- Hỗ trợ phân tích lỗi, xác định nguyên nhân và đề xuất cách sửa lỗi.
+- Hỗ trợ rà soát chức năng xác thực, phân quyền ADMIN/STAFF và quyền sở hữu phiếu bảo hành.
+- Hỗ trợ giải thích các cơ chế bcrypt, AES-256-GCM và HMAC-SHA256.
+- Hỗ trợ xây dựng và rà soát tài liệu API Contract, Security Test và Bug Log.
+- Hỗ trợ bổ sung Migration chuẩn hóa dữ liệu phụ kiện và điều chỉnh file Seed tương ứng.
+- Hỗ trợ kiểm tra cấu hình Docker, Docker Compose và hướng dẫn triển khai.
+- Hỗ trợ đối chiếu kết quả kiểm thử, ảnh minh chứng và nội dung báo cáo.
 
 ## 3. Cách tự kiểm chứng kết quả
 
-Các nội dung do AI hỗ trợ được sinh viên xem xét, thực hiện và kiểm chứng trong môi trường dự án bằng các hoạt động sau:
+Các nội dung do AI hỗ trợ được sinh viên xem xét, thực hiện và kiểm chứng trực tiếp trong môi trường dự án thông qua:
 
-- Chạy ứng dụng Backend và Frontend trên máy cá nhân.
-- Thực hiện kiểm tra API với dữ liệu trong PostgreSQL.
-- Chạy bộ kiểm thử Backend bằng lệnh `npm test`.
-- Xác nhận kết quả 11 unit test PASS, 0 FAIL.
-- Chạy `npm run build` để kiểm tra khả năng build Frontend.
-- Kiểm thử trực tiếp các luồng đăng nhập, tra cứu khách hàng, xem chi tiết, tạo phiếu, kiểm tra dữ liệu không hợp lệ và xử lý lỗi kết nối.
-- Đối chiếu hạn cam kết được lưu trong PostgreSQL với quy tắc nghiệp vụ trong SRS.
+- Chạy ứng dụng Backend và Frontend bằng Docker Compose.
+- Kiểm tra cấu hình bằng `docker compose config --quiet`.
+- Build các image Backend, Frontend và Test.
+- Kiểm tra trạng thái các dịch vụ PostgreSQL, Backend và Frontend.
+- Kiểm tra endpoint `/health`, xác nhận HTTP 200 và database kết nối thành công.
+- Kiểm thử trực tiếp chức năng đăng nhập, danh sách phiếu và chi tiết phiếu trên giao diện.
+- Chạy bộ kiểm thử tự động bằng `docker compose --profile test run --rm test`, kết quả 29/29 PASS, gồm 17 Unit Test, 2 Integration Test, 5 API / System Test và 5 Crypto Test.
+- Kiểm tra thủ công quyền sở hữu phiếu, HTTP Security Headers, SQL Injection, xác thực và xử lý JSON không hợp lệ.
+- Kiểm thử API PUT sau khi sửa BUG-04, xác nhận HTTP 200.
+- Chạy Migration và Seed nhiều lần trên database kiểm thử, xác nhận migration được nhận diện đã áp dụng và không tạo dữ liệu mẫu trùng lặp.
+- Đối chiếu các tài liệu và ảnh minh chứng với kết quả thực tế.
 
 ## 4. Cam kết của sinh viên
 
-AI được sử dụng như một công cụ hỗ trợ trong quá trình học tập và phát triển phần mềm, không thay thế trách nhiệm của sinh viên.
+AI được sử dụng như một công cụ hỗ trợ trong quá trình học tập, phân tích, phát triển và kiểm thử phần mềm, không thay thế trách nhiệm của sinh viên.
 
-Sinh viên có trách nhiệm đọc hiểu, xem xét, thực hiện và kiểm chứng mã nguồn trước khi sử dụng trong sản phẩm. Sinh viên chịu trách nhiệm về tính chính xác, tính phù hợp của nghiệp vụ, kết quả kiểm thử và toàn bộ nội dung nộp cho học phần.
+Các đề xuất, đoạn mã và nội dung tài liệu do AI hỗ trợ đều được sinh viên xem xét, chỉnh sửa, thực hiện và kiểm chứng trước khi sử dụng.
+
+Sinh viên chịu trách nhiệm về tính chính xác của mã nguồn, sự phù hợp của nghiệp vụ, kết quả kiểm thử, tài liệu kỹ thuật và toàn bộ sản phẩm nộp cho học phần.

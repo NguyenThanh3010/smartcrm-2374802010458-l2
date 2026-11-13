@@ -94,3 +94,35 @@ Phạm vi tập trung vào quá trình nhân viên tiếp nhận tra cứu thôn
 | FR6   | Phân loại nhóm sự cố từ danh mục quy định                            | US6        | UC4 - Phân loại nhóm sự cố                  | MUST   |
 | FR7   | Xác định mức ưu tiên của phiếu bảo hành                              | US7        | UC5 - Xác định mức độ ưu tiên               | SHOULD |
 | FR8   | Tự động xác định và lưu hạn cam kết theo mức ưu tiên                 | US8        | UC6 - Xác định hạn cam kết                  | SHOULD |
+
+## 7. Đối chiếu yêu cầu với hiện trạng triển khai
+
+Mục này ghi nhận mức độ đáp ứng của phiên bản Smart CRM hiện tại so với các yêu cầu trong SRS. Các nội dung chưa triển khai đầy đủ được ghi nhận để tránh nhầm lẫn giữa yêu cầu ban đầu và chức năng thực tế của hệ thống.
+
+### 7.1. Đối chiếu quy tắc nghiệp vụ
+
+| Mã yêu cầu | Hiện trạng triển khai | Mức độ đáp ứng |
+|---|---|---|
+| QT-02 | Backend kiểm tra số điện thoại có đúng 10 chữ số và bắt đầu bằng 0. Hệ thống chỉ loại bỏ khoảng trắng ở đầu và cuối, chưa tự chuẩn hóa mã quốc gia, dấu chấm hoặc khoảng trắng bên trong. | Đáp ứng một phần |
+| QT-04 | Backend tự động tính hạn cam kết theo mức CAO, TRUNG_BINH và THAP, tương ứng 1, 3 và 5 ngày; bỏ qua Chủ nhật và sử dụng múi giờ Việt Nam. Chưa xử lý lịch nghỉ lễ hoặc khung giờ làm việc cụ thể. | Đáp ứng một phần |
+| QT-05 | Hệ thống kiểm tra thời hạn bảo hành khi có ngày mua và số tháng bảo hành hợp lệ. Thiết bị đã hết hạn sẽ bị từ chối tạo phiếu nếu chưa được phê duyệt. Tuy nhiên, chưa có chức năng lưu và quản lý quy trình phê duyệt của quản lý; trường hợp thiếu ngày mua chưa được xử lý theo yêu cầu phê duyệt. | Đáp ứng một phần |
+| QT-06 | Khi tạo phiếu, hệ thống ghi nhận trạng thái ban đầu MOI. Khi hủy phiếu, hệ thống chuyển từ MOI sang HUY và ghi lịch sử vào bảng ticket_status_log. Chưa triển khai API chuyển đổi đầy đủ giữa các trạng thái xử lý khác. | Đáp ứng một phần |
+| QT-13 | Phiếu bảo hành được hủy bằng cách cập nhật trạng thái và giữ lịch sử. Tuy nhiên, chức năng xóa khách hàng hiện vẫn thực hiện xóa vật lý bằng câu lệnh DELETE. | Đáp ứng một phần |
+| QT-14 | ADMIN có thể xem phiếu trên toàn hệ thống; STAFF chỉ được xem và thao tác với phiếu do mình tạo. Chưa triển khai phân quyền dữ liệu theo cửa hàng hoặc trung tâm bảo hành. | Đáp ứng một phần |
+| QT-15 | Số điện thoại được che theo định dạng 090****567 khi trả về từ API khách hàng và API phiếu bảo hành. Chưa có cơ chế cho phép quản lý hoặc Ban giám đốc xem số điện thoại đầy đủ theo vai trò. | Đáp ứng một phần |
+
+### 7.2. Đối chiếu yêu cầu phi chức năng
+
+| Mã yêu cầu | Hiện trạng kiểm chứng | Mức độ đáp ứng |
+|---|---|---|
+| NFR1 | Chưa thực hiện kiểm thử hiệu năng với dữ liệu 10.000 phiếu bảo hành để xác nhận thời gian phản hồi dưới 2 giây. | Chưa kiểm chứng |
+| NFR2 | Chưa thực hiện kiểm thử người dùng để đo thời gian hoàn thành thao tác tạo phiếu dưới 3 phút. | Chưa kiểm chứng |
+| NFR3 | Đã triển khai che số điện thoại trong phản hồi API cho cả ADMIN và STAFF. Tuy nhiên, chưa có cơ chế phân quyền để vai trò quản lý và Ban giám đốc xem số điện thoại đầy đủ. | Đáp ứng một phần |
+
+### 7.3. Ghi nhận phạm vi hoàn thiện
+
+Phiên bản hiện tại tập trung hoàn thiện luồng tiếp nhận và phân loại yêu cầu bảo hành, bao gồm quản lý khách hàng, thiết bị, phiếu bảo hành, xác thực người dùng, kiểm soát quyền sở hữu phiếu, mã hóa dữ liệu nhạy cảm và tính hạn cam kết.
+
+Các nội dung chưa được triển khai đầy đủ gồm chuẩn hóa số điện thoại theo nhiều định dạng, quy trình phê duyệt ngoại lệ bảo hành, quản lý vòng đời trạng thái đầy đủ, xóa mềm khách hàng và phân quyền dữ liệu theo đơn vị.
+
+Các nội dung này được ghi nhận là giới hạn của phiên bản hiện tại, không được xem là chức năng đã hoàn thành.

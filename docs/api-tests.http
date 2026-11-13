@@ -1,15 +1,24 @@
 ### SMART CRM L02 - API TESTS
-### Base URL
+
+### Cấu hình chạy trực tiếp Backend (không dùng Docker)
+### Khởi động Backend bằng npm start tại src/backend trước khi gửi request.
 @baseUrl = http://localhost:3000
 
 ### Thay các giá trị bên dưới bằng thông tin thử nghiệm của bạn.
 ### Không ghi mật khẩu thật hoặc token thật vào Git.
 @token = PASTE_TOKEN_HERE
 @customerId = 1
-@deviceId = 1
+@deviceId = 4
 @centerId = 1
 @categoryId = 1
 @ticketId = 1
+
+### Lưu ý:
+### - deviceId phải thuộc customerId và chưa có phiếu chưa đóng.
+### - Device ID 4 được chuẩn bị trong Seed cho kiểm thử tạo phiếu thành công trên database mới.
+### - ticketId 1 là phiếu mẫu do ADMIN tạo; cần dùng ADMIN token để xem phiếu này.
+### - Khi dùng Docker Compose, các API /api được truy cập qua http://localhost:8080.
+### - GET / ở mục 1 chỉ kiểm tra Backend khi chạy trực tiếp tại cổng 3000.
 
 ### 1. Kiểm tra Backend
 GET {{baseUrl}}/

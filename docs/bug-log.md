@@ -93,4 +93,4 @@ Tài liệu ghi nhận các lỗi thực tế phát hiện trong quá trình ph�
 
 6. **Cách sửa:** Thay thuộc tính `priority` bằng `priority: merged.priority` khi gọi `repository.update()`. Sau đó build lại Docker Backend để đưa mã nguồn mới vào container.
 
-7. **Commit và xác nhận:** Phần sửa lỗi được thực hiện trong quá trình hoàn thiện BT3; chưa có commit riêng tại thời điểm ghi nhận. Sau khi build lại Backend, kiểm thử PUT với phiếu ID 4 trả HTTP 200, không có lỗi `INTERNAL_SERVER_ERROR`, phản hồi trả về đúng `ticket_id` và giữ nguyên mức ưu tiên. Kết quả: PASS. Mã commit sẽ được bổ sung sau khi hoàn tất và commit các thay đổi BT3.
+7. **Commit và xác nhận:** Phần sửa lỗi được thực hiện trong commit `cc588d2` – `Complete BT3 testing, security and Docker deployment`. Sau khi build lại Backend, kiểm thử PUT với phiếu ID 4 trả HTTP 200, không có lỗi `INTERNAL_SERVER_ERROR`, phản hồi trả về đúng `ticket_id` và giữ nguyên mức ưu tiên. Kết quả: PASS.
